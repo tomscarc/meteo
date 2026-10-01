@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NavMeteo - Navigazione, Meteo & ETA</title>
+    <title>NavMeteo - GPS SOG, Telemetria & ETA</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -230,10 +230,10 @@
         }
 
         .speed-input {
-            width: 60px !important;
-            font-weight: bold;
-            color: var(--accent-cyan);
-            border-color: var(--accent-cyan);
+            width: 50px !important;
+            font-size: 0.85rem !important;
+            color: var(--text-muted) !important;
+            border-color: var(--border-color) !important;
         }
     </style>
 </head>
@@ -241,7 +241,7 @@
 
     <div id="app-header">
         <h1>NavMeteo</h1>
-        <span id="gps-status" style="font-size: 0.8rem; color: var(--accent-green);">GPS Attivo</span>
+        <span id="gps-status" style="font-size: 0.8rem; color: var(--accent-green);">GPS In cerca...</span>
     </div>
 
     <!-- Pannello Waypoint (DMS) -->
@@ -331,12 +331,14 @@
                     <div class="telemetry-value"><span id="val-brg">---</span><span class="unit">°</span></div>
                 </div>
 
-                <!-- Velocità target -->
+                <!-- Velocità SOG Rilevata da GPS -->
                 <div class="telemetry-card highlight">
-                    <div class="telemetry-label">Velocità Stimata (SOG)</div>
+                    <div class="telemetry-label">Velocità GPS (SOG)</div>
                     <div class="telemetry-value">
-                        <input type="number" id="input-sog" class="speed-input" value="6.0" step="0.5" min="0.1" onchange="updateNavigation()">
-                        <span class="unit">kn</span>
+                        <span id="val-sog" style="color: var(--accent-cyan);">0.0</span> <span class="unit">kn</span>
+                    </div>
+                    <div class="unit" id="sog-source" style="margin-top: 4px; font-size: 0.7rem;">
+                        Fallback: <input type="number" id="input-fallback-sog" class="speed-input" value="6.0" step="0.5" min="0.1" onchange="updateNavigation()"> kn
                     </div>
                 </div>
 
@@ -363,6 +365,7 @@
         let currentPos = [41.1259, 16.8721]; // Bari (Default)
         let waypointPos = null;
         let lastMeteoFetch = 0;
+        let gpsSpeedKnots = null; // Velocità GPS istantanea
 
         const map = L.map('map').setView(currentPos, 11);
 
@@ -430,7 +433,7 @@
 
             if (!waypointPos) return;
 
-            // Disegna la Lossodromia
+            // Lossodromia
             if (rhumbLine) {
                 rhumbLine.setLatLngs([currentPos, waypointPos]);
             } else {
@@ -451,16 +454,25 @@
             document.getElementById('val-dist').innerText = distNM.toFixed(2);
             document.getElementById('val-brg').innerText = Math.round(brg);
 
-            // Calcolo ETE e ETA
-            const sog = parseFloat(document.getElementById('input-sog').value) || 6.0;
-            if (sog > 0) {
-                const totalHours = distNM / sog;
+            // Determinazione Velocità per ETA: GPS reale vs Fallback
+            const fallbackSog = parseFloat(document.getElementById('input-fallback-sog').value) || 6.0;
+            let activeSog = fallbackSog;
+
+            if (gpsSpeedKnots !== null && gpsSpeedKnots > 0.3) {
+                activeSog = gpsSpeedKnots;
+                document.getElementById('val-sog').innerText = activeSog.toFixed(1);
+            } else {
+                document.getElementById('val-sog').innerText = `0.0 (${activeSog.toFixed(1)})`;
+            }
+
+            // Calcolo ETE ed ETA
+            if (activeSog > 0) {
+                const totalHours = distNM / activeSog;
                 const hours = Math.floor(totalHours);
                 const minutes = Math.round((totalHours - hours) * 60);
 
                 document.getElementById('val-ete').innerText = `${hours}h ${minutes}m`;
 
-                // Data/Ora stimata di arrivo
                 const etaDate = new Date(Date.now() + totalHours * 3600 * 1000);
                 const etaTimeStr = etaDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const etaDayStr = etaDate.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
@@ -575,11 +587,23 @@
             return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
         }
 
+        // Tracking Geolocalizzazione con rilevamento velocita SOG
         if ("geolocation" in navigator) {
             navigator.geolocation.watchPosition(
                 (position) => {
+                    document.getElementById('gps-status').innerText = 'GPS Attivo';
+                    document.getElementById('gps-status').style.color = 'var(--accent-green)';
+
                     currentPos = [position.coords.latitude, position.coords.longitude];
                     posMarker.setLatLng(currentPos);
+
+                    // Estrazione velocità da GPS (m/s -> nodi)
+                    if (position.coords.speed !== null && position.coords.speed !== undefined) {
+                        gpsSpeedKnots = position.coords.speed * 1.94384;
+                    } else {
+                        gpsSpeedKnots = null;
+                    }
+
                     updateNavigation();
 
                     const now = Date.now();
@@ -588,8 +612,12 @@
                         lastMeteoFetch = now;
                     }
                 },
-                (error) => console.warn("GPS non disponibile:", error),
-                { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+                (error) => {
+                    console.warn("GPS non disponibile:", error);
+                    document.getElementById('gps-status').innerText = 'GPS Assente';
+                    document.getElementById('gps-status').style.color = 'red';
+                },
+                { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
             );
         }
 
