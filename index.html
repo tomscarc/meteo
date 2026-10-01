@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NavMeteo - Navigazione, Meteo & Lossodromia</title>
+    <title>NavMeteo - Navigazione, Meteo & ETA</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -14,6 +14,7 @@
             --card-bg: #162235;
             --accent-orange: #FF6B00;
             --accent-green: #00ff88;
+            --accent-cyan: #00e5ff;
             --text-main: #e0e6ed;
             --text-muted: #8a99ad;
             --border-color: #23354d;
@@ -47,7 +48,7 @@
             letter-spacing: 1px;
         }
 
-        /* Contenitore Pannello Waypoint (Esterno alla Mappa) */
+        /* Contenitore Pannello Waypoint */
         #waypoint-bar {
             background: #0e1826;
             padding: 12px 15px;
@@ -126,7 +127,7 @@
             flex: 1;
         }
 
-        /* Mappa Leaflet Pulita */
+        /* Mappa Leaflet */
         #map {
             width: 100%;
             height: 40vh;
@@ -134,7 +135,7 @@
             z-index: 1;
         }
 
-        /* Grid della Dashboard Telemetria e Meteo */
+        /* Dashboard Telemetria e Meteo */
         #dashboard {
             background-color: var(--card-bg);
             padding: 15px;
@@ -144,7 +145,7 @@
             border-top: 2px solid var(--accent-orange);
         }
 
-        /* Riquadro Principale: Meteo & Coordinate Attuali */
+        /* Meteo & Coordinate Attuali */
         .weather-box {
             background: linear-gradient(135deg, rgba(14, 24, 38, 0.9), rgba(22, 34, 53, 0.9));
             border: 1px solid var(--accent-green);
@@ -186,7 +187,7 @@
 
         .nav-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 12px;
         }
 
@@ -196,6 +197,11 @@
             border-radius: 8px;
             border: 1px solid var(--border-color);
             text-align: center;
+        }
+
+        .telemetry-card.highlight {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 229, 255, 0.05);
         }
 
         .telemetry-label {
@@ -222,6 +228,13 @@
             transition: transform 0.5s ease;
             color: var(--accent-orange);
         }
+
+        .speed-input {
+            width: 60px !important;
+            font-weight: bold;
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+        }
     </style>
 </head>
 <body>
@@ -231,11 +244,10 @@
         <span id="gps-status" style="font-size: 0.8rem; color: var(--accent-green);">GPS Attivo</span>
     </div>
 
-    <!-- Riquadro Waypoint ESTERNO alla Mappa -->
+    <!-- Pannello Waypoint (DMS) -->
     <div id="waypoint-bar">
         <div class="waypoint-title">Imposta Waypoint (DMS)</div>
         <div class="dms-group">
-            <!-- Latitudine -->
             <div class="dms-row">
                 <label>LAT</label>
                 <input type="number" id="wp-lat-deg" placeholder="GG" min="0" max="90">°
@@ -247,7 +259,6 @@
                 </select>
             </div>
 
-            <!-- Longitudine -->
             <div class="dms-row">
                 <label>LON</label>
                 <input type="number" id="wp-lon-deg" placeholder="GG" min="0" max="180">°
@@ -264,13 +275,13 @@
     </div>
 
     <div id="main-container">
-        <!-- Area Mappa Leaflet -->
+        <!-- Mappa Leaflet -->
         <div id="map"></div>
 
-        <!-- Dashboard Telemetria e Meteo -->
+        <!-- Dashboard Telemetria, Meteo ed ETA -->
         <div id="dashboard">
 
-            <!-- RIQUADRO METEO E COORDINATE SESSAGESIMALI POSIZIONE ATTUALE -->
+            <!-- Meteo & Coordinate Attuali -->
             <div class="weather-box">
                 <div class="weather-box-header">
                     <span class="weather-box-title">📍 Posizione Corrente & Meteo</span>
@@ -303,7 +314,7 @@
                 </div>
             </div>
 
-            <!-- TELEMETRIA ROTTA / WAYPOINT -->
+            <!-- TELEMETRIA ROTTA, DISTANZA ED ETA -->
             <div class="nav-grid">
                 <div class="telemetry-card">
                     <div class="telemetry-label">Waypoint (DMS)</div>
@@ -318,6 +329,27 @@
                 <div class="telemetry-card">
                     <div class="telemetry-label">Rilevamento (BRG)</div>
                     <div class="telemetry-value"><span id="val-brg">---</span><span class="unit">°</span></div>
+                </div>
+
+                <!-- Velocità target -->
+                <div class="telemetry-card highlight">
+                    <div class="telemetry-label">Velocità Stimata (SOG)</div>
+                    <div class="telemetry-value">
+                        <input type="number" id="input-sog" class="speed-input" value="6.0" step="0.5" min="0.1" onchange="updateNavigation()">
+                        <span class="unit">kn</span>
+                    </div>
+                </div>
+
+                <!-- Durata Stimata Navigazione (ETE) -->
+                <div class="telemetry-card highlight">
+                    <div class="telemetry-label">Tempo di Percorrenza (ETE)</div>
+                    <div class="telemetry-value" id="val-ete" style="color: var(--accent-cyan);">--h --m</div>
+                </div>
+
+                <!-- Orario Stimato di Arrivo (ETA) -->
+                <div class="telemetry-card highlight">
+                    <div class="telemetry-label">Ora di Arrivo Stimata (ETA)</div>
+                    <div class="telemetry-value" id="val-eta" style="color: var(--accent-cyan);">--:--</div>
                 </div>
             </div>
 
@@ -345,7 +377,6 @@
         let wpMarker = null;
         let rhumbLine = null;
 
-        // Imposta Waypoint cliccando sulla Mappa
         map.on('click', function(e) {
             setWaypoint(e.latlng.lat, e.latlng.lng);
         });
@@ -395,7 +426,6 @@
         }
 
         function updateNavigation() {
-            // Aggiorna Coordinate Sessagesimali Posizione Corrente nel Riquadro Meteo
             document.getElementById('val-pos-dms').innerText = formatDMSString(currentPos[0], currentPos[1]);
 
             if (!waypointPos) return;
@@ -414,15 +444,34 @@
 
             // Distanza e Rilevamento
             const distMeters = map.distance(currentPos, waypointPos);
-            const distNM = (distMeters / 1852).toFixed(2);
+            const distNM = distMeters / 1852;
             const brg = calculateBearing(currentPos[0], currentPos[1], waypointPos[0], waypointPos[1]);
 
             document.getElementById('val-wp').innerText = formatDMSString(waypointPos[0], waypointPos[1]);
-            document.getElementById('val-dist').innerText = distNM;
+            document.getElementById('val-dist').innerText = distNM.toFixed(2);
             document.getElementById('val-brg').innerText = Math.round(brg);
+
+            // Calcolo ETE e ETA
+            const sog = parseFloat(document.getElementById('input-sog').value) || 6.0;
+            if (sog > 0) {
+                const totalHours = distNM / sog;
+                const hours = Math.floor(totalHours);
+                const minutes = Math.round((totalHours - hours) * 60);
+
+                document.getElementById('val-ete').innerText = `${hours}h ${minutes}m`;
+
+                // Data/Ora stimata di arrivo
+                const etaDate = new Date(Date.now() + totalHours * 3600 * 1000);
+                const etaTimeStr = etaDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const etaDayStr = etaDate.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+
+                document.getElementById('val-eta').innerText = `${etaTimeStr} (${etaDayStr})`;
+            } else {
+                document.getElementById('val-ete').innerText = `--h --m`;
+                document.getElementById('val-eta').innerText = `--:--`;
+            }
         }
 
-        // Recupero Meteo / Vento via Open-Meteo API
         async function fetchWeatherData(lat, lon) {
             try {
                 const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=cloudcover&windspeed_unit=kn`);
@@ -446,11 +495,9 @@
                     document.getElementById('val-wind-dir').innerText = Math.round(dirDeg);
                     document.getElementById('val-wind-cardinal').innerText = degToCardinal(dirDeg);
 
-                    // Beaufort
                     const beaufort = knotsToBeaufort(speedKn);
                     document.getElementById('val-beaufort').innerText = `Beaufort: F${beaufort.scale} (${beaufort.desc})`;
 
-                    // Ruota freccia vento
                     const arrowIcon = document.getElementById('wind-arrow-icon');
                     arrowIcon.style.transform = `rotate(${dirDeg}deg)`;
                 }
@@ -459,7 +506,6 @@
             }
         }
 
-        // Interpretazione Weathercode WMO
         function getWeatherDescription(code) {
             const codes = {
                 0: 'Sereno',
@@ -529,7 +575,6 @@
             return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
         }
 
-        // GPS Tracking con aggiornamento dinamico
         if ("geolocation" in navigator) {
             navigator.geolocation.watchPosition(
                 (position) => {
@@ -548,7 +593,6 @@
             );
         }
 
-        // Caricamento iniziale
         updateNavigation();
         fetchWeatherData(currentPos[0], currentPos[1]);
     </script>
