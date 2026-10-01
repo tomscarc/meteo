@@ -235,11 +235,11 @@ button {
     </div>
     <div class="coordinates">
       <div class="coordinate">
-        <span class="label">Latitudine</span>
+        <span class="label">Latitudine (DMS)</span>
         <strong id="lat">--</strong>
       </div>
       <div class="coordinate">
-        <span class="label">Longitudine</span>
+        <span class="label">Longitudine (DMS)</span>
         <strong id="lon">--</strong>
       </div>
     </div>
@@ -368,6 +368,27 @@ const state = {
 const $ = id => document.getElementById(id);
 
 /* =========================================================
+   CONVERSIONE IN SESSAGESIMALE (DMS)
+   ========================================================= */
+function toDMS(deg, isLat) {
+  if (deg === null || deg === undefined) return "--";
+  const absolute = Math.abs(deg);
+  const degrees = Math.floor(absolute);
+  const minutesNotTruncated = (absolute - degrees) * 60;
+  const minutes = Math.floor(minutesNotTruncated);
+  const seconds = ((minutesNotTruncated - minutes) * 60).toFixed(1);
+  
+  let direction = "";
+  if (isLat) {
+    direction = deg >= 0 ? "N" : "S";
+  } else {
+    direction = deg >= 0 ? "E" : "W";
+  }
+
+  return `${degrees}° ${minutes}' ${seconds}" ${direction}`;
+}
+
+/* =========================================================
    INIZIALIZZAZIONE MAPPA E CARTA NAUTICA
    ========================================================= */
 state.map = L.map("map").setView([state.lat, state.lon], 10);
@@ -415,8 +436,10 @@ function updatePosition(position) {
   state.speed = c.speed;
   if (c.heading !== null && Number.isFinite(c.heading)) state.heading = c.heading;
 
-  $("lat").textContent = formatCoord(state.lat, true);
-  $("lon").textContent = formatCoord(state.lon, false);
+  // Visualizzazione strictly Sessagesimale (DMS)
+  $("lat").textContent = toDMS(state.lat, true);
+  $("lon").textContent = toDMS(state.lon, false);
+
   $("accuracy").textContent = state.accuracy ? Math.round(state.accuracy) + " m" : "--";
   $("speed").textContent = state.speed !== null && state.speed >= 0 ? (state.speed * 1.94384).toFixed(1) + " kn" : "--";
   $("heading").textContent = state.heading !== null ? Math.round(state.heading) + "° " + cardinal(state.heading) : "--";
@@ -431,7 +454,8 @@ function updatePosition(position) {
 
 function updateMarker() {
   const pos = [state.lat, state.lon];
-  
+  const popupText = `<b>Posizione Nautica</b><br>Lat: ${toDMS(state.lat, true)}<br>Lon: ${toDMS(state.lon, false)}`;
+
   if (!state.marker) {
     state.marker = L.circleMarker(pos, {
       radius: 8,
@@ -439,9 +463,10 @@ function updateMarker() {
       weight: 2,
       fillColor: "#00a8e8",
       fillOpacity: 1
-    }).addTo(state.map);
+    }).bindPopup(popupText).addTo(state.map);
   } else {
     state.marker.setLatLng(pos);
+    state.marker.setPopupContent(popupText);
   }
 
   if (state.accuracy) {
@@ -532,12 +557,6 @@ function cardinal(deg) {
   return dirs[Math.round(deg / 45) % 8];
 }
 
-function formatCoord(val, isLat) {
-  if (val === null) return "--";
-  const dir = isLat ? (val >= 0 ? "N" : "S") : (val >= 0 ? "E" : "W");
-  return Math.abs(val).toFixed(5) + "° " + dir;
-}
-
 function weatherDescription(code) {
   const codes = { 0:"Sereno", 1:"Prevalentemente sereno", 2:"Parzialmente nuvoloso", 3:"Nuvoloso", 45:"Nebbia", 61:"Pioggia", 80:"Rovesci", 95:"Temporale" };
   return codes[code] || "Variabile";
@@ -547,6 +566,10 @@ function weatherDescription(code) {
 window.addEventListener("online", () => $("status").classList.add("online"));
 window.addEventListener("offline", () => $("status").classList.remove("online"));
 if (navigator.onLine) $("status").classList.add("online");
+
+// Impostazione iniziale visualizzazione DMS
+$("lat").textContent = toDMS(state.lat, true);
+$("lon").textContent = toDMS(state.lon, false);
 
 // Caricamento dati meteo iniziali
 loadWeather(state.lat, state.lon);
