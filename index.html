@@ -140,6 +140,15 @@ button {
   gap: 8px;
 }
 
+.secondary-btn {
+  padding: 10px 15px;
+  border-radius: 8px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .message {
   margin-top: 9px;
   color: var(--muted);
@@ -165,6 +174,30 @@ button {
 
 .card span { color: var(--muted); font-size: 11px; }
 .card strong { font-size: 16px; }
+
+.wp-input-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.wp-input-group input {
+  width: 100%;
+  padding: 10px;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.wp-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
 
 .updated {
   margin-top: 10px;
@@ -211,6 +244,7 @@ button {
 @media (max-width: 600px) {
   .grid { grid-template-columns: 1fr 1fr; }
   .extra { grid-template-columns: 1fr; }
+  .wp-input-group { grid-template-columns: 1fr; }
   #map { height: 350px; }
 }
 </style>
@@ -263,10 +297,56 @@ button {
     <div id="gpsMessage" class="message"></div>
   </section>
 
+  <!-- NAVIGAZIONE E WAYPOINT -->
+  <section class="panel">
+    <div class="panel-title">
+      <span><i class="fa-solid fa-route"></i> Rotta & Waypoint</span>
+    </div>
+    
+    <div class="wp-input-group">
+      <div>
+        <span class="label">Latitudine Waypoint (Decimali o DMS)</span>
+        <input type="text" id="wpLatInput" placeholder="es. 41.1259 o 41° 7' 33.2&quot; N">
+      </div>
+      <div>
+        <span class="label">Longitudine Waypoint (Decimali o DMS)</span>
+        <input type="text" id="wpLonInput" placeholder="es. 16.8721 o 16° 52' 19.6&quot; E">
+      </div>
+    </div>
+
+    <div class="wp-actions">
+      <button class="secondary-btn" onclick="setWaypointFromInputs()">
+        <i class="fa-solid fa-location-dot"></i> Imposta Waypoint
+      </button>
+      <button class="secondary-btn" style="background: rgba(255, 89, 94, 0.2); border-color: var(--red);" onclick="clearWaypoint()">
+        <i class="fa-solid fa-trash"></i> Rimuovi
+      </button>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <span>Coordinate Waypoint</span>
+        <strong id="wpCoords" style="font-size: 13px;">Nessuno</strong>
+      </div>
+      <div class="card">
+        <span>Rotta Vera (Bearing)</span>
+        <strong id="navBearing">--</strong>
+      </div>
+      <div class="card">
+        <span>Distanza</span>
+        <strong id="navDistance">-- NM</strong>
+      </div>
+      <div class="card" style="grid-column: span 3 / auto;">
+        <span>Tempo Stimato Arrivo (ETA)</span>
+        <strong id="navETA">--</strong>
+      </div>
+    </div>
+  </section>
+
   <!-- MAPPA & CARTA NAUTICA -->
   <section class="panel">
     <div class="panel-title">
-      <span><i class="fa-solid fa-map"></i> Carta Nautica</span>
+      <span><i class="fa-solid fa-map"></i> Carta Nautica (Clicca sulla mappa per impostare il Waypoint)</span>
     </div>
     <div id="map"></div>
   </section>
@@ -357,35 +437,187 @@ const state = {
   lat: 41.1259,
   lon: 16.8721,
   accuracy: null,
-  speed: null,
+  speed: null, // in metri al secondo dal GPS
   heading: null,
   map: null,
   marker: null,
   accuracyCircle: null,
+  wpLat: null,
+  wpLon: null,
+  wpMarker: null,
+  routeLine: null,
   timerSeconds: 60
 };
 
 const $ = id => document.getElementById(id);
 
 /* =========================================================
-   CONVERSIONE IN SESSAGESIMALE (DMS)
+   CONVERSIONE ED ELABORAZIONE COORDINATE SESSAGESIMALI
    ========================================================= */
 function toDMS(deg, isLat) {
-  if (deg === null || deg === undefined) return "--";
+  if (deg === null || deg === undefined || isNaN(deg)) return "--";
   const absolute = Math.abs(deg);
   const degrees = Math.floor(absolute);
   const minutesNotTruncated = (absolute - degrees) * 60;
   const minutes = Math.floor(minutesNotTruncated);
   const seconds = ((minutesNotTruncated - minutes) * 60).toFixed(1);
   
-  let direction = "";
-  if (isLat) {
-    direction = deg >= 0 ? "N" : "S";
-  } else {
-    direction = deg >= 0 ? "E" : "W";
+  let direction = isLat ? (deg >= 0 ? "N" : "S") : (deg >= 0 ? "E" : "W");
+  return `${degrees}° ${minutes}' ${seconds}" ${direction}`;
+}
+
+function parseCoordinateInput(input) {
+  if (!input) return null;
+  const str = input.trim();
+  const decVal = parseFloat(str);
+  
+  // Se è un numero decimale standard
+  if (!isNaN(decVal) && str.indexOf("°") === -1) {
+    return decVal;
+  }
+  
+  // Regex per stringhe DMS (es. 41° 7' 33.2" N)
+  const dmsRegex = /(\d+)\s*°\s*(\d+)\s*'\s*([\d.]+)\s*"?\s*([NSEWnsew])?/;
+  const match = str.match(dmsRegex);
+  if (match) {
+    const deg = parseFloat(match[1]);
+    const min = parseFloat(match[2]);
+    const sec = parseFloat(match[3]);
+    const dir = match[4] ? match[4].toUpperCase() : null;
+
+    let decimal = deg + (min / 60) + (sec / 3600);
+    if (dir === 'S' || dir === 'W') decimal = -decimal;
+    return decimal;
+  }
+  return null;
+}
+
+/* =========================================================
+   CALCOLI NAUTICI (ROTTI, DISTANZA, ETA)
+   ========================================================= */
+function calculateDistanceNM(lat1, lon1, lat2, lon2) {
+  const R = 3440.065; // Raggio della Terra in Miglia Nautiche
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function calculateBearing(lat1, lon1, lat2, lon2) {
+  const phi1 = lat1 * Math.PI / 180;
+  const phi2 = lat2 * Math.PI / 180;
+  const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+  const y = Math.sin(deltaLambda) * Math.cos(phi2);
+  const x = Math.cos(phi1) * Math.sin(phi2) -
+            Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
+
+  const theta = Math.atan2(y, x);
+  return (theta * 180 / Math.PI + 360) % 360;
+}
+
+function updateNavigationData() {
+  if (state.wpLat === null || state.wpLon === null) {
+    $("wpCoords").textContent = "Nessuno";
+    $("navBearing").textContent = "--";
+    $("navDistance").textContent = "-- NM";
+    $("navETA").textContent = "--";
+    if (state.routeLine) {
+      state.map.removeLayer(state.routeLine);
+      state.routeLine = null;
+    }
+    return;
   }
 
-  return `${degrees}° ${minutes}' ${seconds}" ${direction}`;
+  // Visualizzazione Waypoint
+  $("wpCoords").innerHTML = `${toDMS(state.wpLat, true)}<br>${toDMS(state.wpLon, false)}`;
+
+  // Calcolo Distanza e Bearing
+  const dist = calculateDistanceNM(state.lat, state.lon, state.wpLat, state.wpLon);
+  const bearing = calculateBearing(state.lat, state.lon, state.wpLat, state.wpLon);
+
+  $("navDistance").textContent = dist.toFixed(2) + " NM";
+  $("navBearing").textContent = Math.round(bearing) + "° " + cardinal(bearing);
+
+  // Calcolo ETA
+  let speedKnots = (state.speed !== null && state.speed > 0.5) ? (state.speed * 1.94384) : 5.0; // Usa la velocità attuale o assume 5 nodi predefiniti
+  const hoursRemaining = dist / speedKnots;
+
+  if (isFinite(hoursRemaining)) {
+    const etaDate = new Date(Date.now() + hoursRemaining * 3600 * 1000);
+    const timeStr = etaDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    const speedNotice = (state.speed !== null && state.speed > 0.5) ? "" : " (stimata a 5 kn)";
+    $("navETA").textContent = `${timeStr} (${formatHours(hoursRemaining)}${speedNotice})`;
+  } else {
+    $("navETA").textContent = "--";
+  }
+
+  // Disegno linea rotta sulla mappa
+  const routeCoords = [[state.lat, state.lon], [state.wpLat, state.wpLon]];
+  if (!state.routeLine) {
+    state.routeLine = L.polyline(routeCoords, { color: '#ffb703', weight: 3, dashArray: '6, 8' }).addTo(state.map);
+  } else {
+    state.routeLine.setLatLngs(routeCoords);
+  }
+}
+
+function formatHours(hours) {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return `${h}h ${m}m`;
+}
+
+/* =========================================================
+   GESTIONE WAYPOINT
+   ========================================================= */
+function setWaypoint(lat, lon) {
+  state.wpLat = lat;
+  state.wpLon = lon;
+
+  $("wpLatInput").value = toDMS(lat, true);
+  $("wpLonInput").value = toDMS(lon, false);
+
+  const pos = [lat, lon];
+  if (!state.wpMarker) {
+    state.wpMarker = L.marker(pos, {
+      icon: L.divIcon({
+        className: 'custom-wp-icon',
+        html: '<i class="fa-solid fa-location-dot" style="color: #ffb703; font-size: 24px;"></i>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 24]
+      })
+    }).addTo(state.map);
+  } else {
+    state.wpMarker.setLatLng(pos);
+  }
+
+  updateNavigationData();
+}
+
+function setWaypointFromInputs() {
+  const latParsed = parseCoordinateInput($("wpLatInput").value);
+  const lonParsed = parseCoordinateInput($("wpLonInput").value);
+
+  if (latParsed !== null && lonParsed !== null) {
+    setWaypoint(latParsed, lonParsed);
+  } else {
+    alert("Coordinate Waypoint non valide. Inserire in gradi decimali (es. 41.125) o sessagesimali (es. 41° 7' 33.2\" N).");
+  }
+}
+
+function clearWaypoint() {
+  state.wpLat = null;
+  state.wpLon = null;
+  $("wpLatInput").value = "";
+  $("wpLonInput").value = "";
+  if (state.wpMarker) {
+    state.map.removeLayer(state.wpMarker);
+    state.wpMarker = null;
+  }
+  updateNavigationData();
 }
 
 /* =========================================================
@@ -393,18 +625,21 @@ function toDMS(deg, isLat) {
    ========================================================= */
 state.map = L.map("map").setView([state.lat, state.lon], 10);
 
-// Base Map OpenStreetMap
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 18,
   attribution: "&copy; OpenStreetMap contributors"
 }).addTo(state.map);
 
-// Overlay Segnalamenti Nautici OpenSeaMap
 L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
   maxZoom: 18,
   opacity: 0.85,
   attribution: "Segnalamenti &copy; OpenSeaMap"
 }).addTo(state.map);
+
+// Click sulla mappa per impostare il Waypoint
+state.map.on('click', function(e) {
+  setWaypoint(e.latlng.lat, e.latlng.lng);
+});
 
 /* =========================================================
    LOGICA GPS
@@ -436,7 +671,6 @@ function updatePosition(position) {
   state.speed = c.speed;
   if (c.heading !== null && Number.isFinite(c.heading)) state.heading = c.heading;
 
-  // Visualizzazione strictly Sessagesimale (DMS)
   $("lat").textContent = toDMS(state.lat, true);
   $("lon").textContent = toDMS(state.lon, false);
 
@@ -445,6 +679,7 @@ function updatePosition(position) {
   $("heading").textContent = state.heading !== null ? Math.round(state.heading) + "° " + cardinal(state.heading) : "--";
 
   updateMarker();
+  updateNavigationData();
   loadWeather(state.lat, state.lon);
 
   $("gpsState").textContent = "GPS attivo";
