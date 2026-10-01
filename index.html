@@ -305,12 +305,12 @@ button {
     
     <div class="wp-input-group">
       <div>
-        <span class="label">Latitudine Waypoint (Decimali o DMS)</span>
-        <input type="text" id="wpLatInput" placeholder="es. 41.1259 o 41° 7' 33.2&quot; N">
+        <span class="label">Latitudine Waypoint (DMS o Decimali)</span>
+        <input type="text" id="wpLatInput" placeholder="es. 41° 7' 33.2&quot; N oppure 41.1259">
       </div>
       <div>
-        <span class="label">Longitudine Waypoint (Decimali o DMS)</span>
-        <input type="text" id="wpLonInput" placeholder="es. 16.8721 o 16° 52' 19.6&quot; E">
+        <span class="label">Longitudine Waypoint (DMS o Decimali)</span>
+        <input type="text" id="wpLonInput" placeholder="es. 16° 52' 19.6&quot; E oppure 16.8721">
       </div>
     </div>
 
@@ -343,10 +343,10 @@ button {
     </div>
   </section>
 
-  <!-- MAPPA & CARTA NAUTICA -->
+  <!-- MAPPA & CARTA NAUTICA OPENSEAMAP -->
   <section class="panel">
     <div class="panel-title">
-      <span><i class="fa-solid fa-map"></i> Carta Nautica (Clicca sulla mappa per impostare il Waypoint)</span>
+      <span><i class="fa-solid fa-map"></i> Carta Nautica OpenSeaMap (Clicca per impostare Waypoint)</span>
     </div>
     <div id="map"></div>
   </section>
@@ -437,7 +437,7 @@ const state = {
   lat: 41.1259,
   lon: 16.8721,
   accuracy: null,
-  speed: null, // in metri al secondo dal GPS
+  speed: null, // m/s dal GPS
   heading: null,
   map: null,
   marker: null,
@@ -452,7 +452,7 @@ const state = {
 const $ = id => document.getElementById(id);
 
 /* =========================================================
-   CONVERSIONE ED ELABORAZIONE COORDINATE SESSAGESIMALI
+   CONVERSIONE COORDINATE SESSAGESIMALI (DMS)
    ========================================================= */
 function toDMS(deg, isLat) {
   if (deg === null || deg === undefined || isNaN(deg)) return "--";
@@ -471,12 +471,10 @@ function parseCoordinateInput(input) {
   const str = input.trim();
   const decVal = parseFloat(str);
   
-  // Se è un numero decimale standard
   if (!isNaN(decVal) && str.indexOf("°") === -1) {
     return decVal;
   }
   
-  // Regex per stringhe DMS (es. 41° 7' 33.2" N)
   const dmsRegex = /(\d+)\s*°\s*(\d+)\s*'\s*([\d.]+)\s*"?\s*([NSEWnsew])?/;
   const match = str.match(dmsRegex);
   if (match) {
@@ -493,10 +491,10 @@ function parseCoordinateInput(input) {
 }
 
 /* =========================================================
-   CALCOLI NAUTICI (ROTTI, DISTANZA, ETA)
+   CALCOLI NAUTICI (DISTANZA, BEARING, ETA)
    ========================================================= */
 function calculateDistanceNM(lat1, lon1, lat2, lon2) {
-  const R = 3440.065; // Raggio della Terra in Miglia Nautiche
+  const R = 3440.065; // Raggio Terra in Miglia Nautiche
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -532,18 +530,15 @@ function updateNavigationData() {
     return;
   }
 
-  // Visualizzazione Waypoint
   $("wpCoords").innerHTML = `${toDMS(state.wpLat, true)}<br>${toDMS(state.wpLon, false)}`;
 
-  // Calcolo Distanza e Bearing
   const dist = calculateDistanceNM(state.lat, state.lon, state.wpLat, state.wpLon);
   const bearing = calculateBearing(state.lat, state.lon, state.wpLat, state.wpLon);
 
   $("navDistance").textContent = dist.toFixed(2) + " NM";
   $("navBearing").textContent = Math.round(bearing) + "° " + cardinal(bearing);
 
-  // Calcolo ETA
-  let speedKnots = (state.speed !== null && state.speed > 0.5) ? (state.speed * 1.94384) : 5.0; // Usa la velocità attuale o assume 5 nodi predefiniti
+  let speedKnots = (state.speed !== null && state.speed > 0.5) ? (state.speed * 1.94384) : 5.0;
   const hoursRemaining = dist / speedKnots;
 
   if (isFinite(hoursRemaining)) {
@@ -555,7 +550,6 @@ function updateNavigationData() {
     $("navETA").textContent = "--";
   }
 
-  // Disegno linea rotta sulla mappa
   const routeCoords = [[state.lat, state.lon], [state.wpLat, state.wpLon]];
   if (!state.routeLine) {
     state.routeLine = L.polyline(routeCoords, { color: '#ffb703', weight: 3, dashArray: '6, 8' }).addTo(state.map);
@@ -604,7 +598,7 @@ function setWaypointFromInputs() {
   if (latParsed !== null && lonParsed !== null) {
     setWaypoint(latParsed, lonParsed);
   } else {
-    alert("Coordinate Waypoint non valide. Inserire in gradi decimali (es. 41.125) o sessagesimali (es. 41° 7' 33.2\" N).");
+    alert("Coordinate Waypoint non valide. Inserire in gradi sessagesimali (es. 41° 7' 33.2\" N) o decimali (es. 41.1259).");
   }
 }
 
@@ -621,22 +615,24 @@ function clearWaypoint() {
 }
 
 /* =========================================================
-   INIZIALIZZAZIONE MAPPA E CARTA NAUTICA
+   INIZIALIZZAZIONE MAPPA E CARTA NAUTICA OPENSEAMAP
    ========================================================= */
 state.map = L.map("map").setView([state.lat, state.lon], 10);
 
+// Base Map OpenStreetMap
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 18,
   attribution: "&copy; OpenStreetMap contributors"
 }).addTo(state.map);
 
+// Overlay Segnalamenti e Simboli Nautici OpenSeaMap
 L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
   maxZoom: 18,
   opacity: 0.85,
   attribution: "Segnalamenti &copy; OpenSeaMap"
 }).addTo(state.map);
 
-// Click sulla mappa per impostare il Waypoint
+// Click sulla carta nautica per selezionare il Waypoint
 state.map.on('click', function(e) {
   setWaypoint(e.latlng.lat, e.latlng.lng);
 });
@@ -802,11 +798,11 @@ window.addEventListener("online", () => $("status").classList.add("online"));
 window.addEventListener("offline", () => $("status").classList.remove("online"));
 if (navigator.onLine) $("status").classList.add("online");
 
-// Impostazione iniziale visualizzazione DMS
+// Visualizzazione iniziale coordinate in DMS
 $("lat").textContent = toDMS(state.lat, true);
 $("lon").textContent = toDMS(state.lon, false);
 
-// Caricamento dati meteo iniziali
+// Caricamento iniziale meteo
 loadWeather(state.lat, state.lon);
 </script>
 
