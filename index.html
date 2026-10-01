@@ -4,1986 +4,552 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#06141c">
-
 <title>NavMeteo Nautica</title>
 
-<link rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<!-- Leaflet CSS & FontAwesome Icons -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 :root {
-    --bg:#06141c;
-    --panel:#0c222d;
-    --panel2:#123342;
-    --border:#1b4659;
-    --blue:#00a8e8;
-    --blue2:#0077a5;
-    --text:#f2f7f9;
-    --muted:#8eaab7;
-    --green:#25d366;
-    --orange:#ffb703;
-    --red:#ff595e;
+  --bg: #06141c;
+  --panel: #0c222d;
+  --panel2: #123342;
+  --border: #1b4659;
+  --blue: #00a8e8;
+  --blue2: #0077a5;
+  --text: #f2f7f9;
+  --muted: #8eaab7;
+  --green: #25d366;
+  --orange: #ffb703;
+  --red: #ff595e;
 }
 
-* {
-    box-sizing:border-box;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Arial,
-        sans-serif;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 .header {
-    position:sticky;
-    top:0;
-    z-index:1000;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:15px 18px;
-    background:rgba(6,20,28,.96);
-    border-bottom:1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 18px;
+  background: rgba(6, 20, 28, 0.96);
+  border-bottom: 1px solid var(--border);
 }
 
-.title {
-    font-size:21px;
-    font-weight:800;
-}
-
-.subtitle {
-    color:var(--muted);
-    font-size:12px;
-    margin-top:3px;
-}
+.title { font-size: 20px; font-weight: 800; }
+.subtitle { color: var(--muted); font-size: 12px; margin-top: 2px; }
 
 .status {
-    width:12px;
-    height:12px;
-    border-radius:50%;
-    background:var(--red);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--red);
 }
-
 .status.online {
-    background:var(--green);
-    box-shadow:0 0 10px var(--green);
+  background: var(--green);
+  box-shadow: 0 0 10px var(--green);
 }
 
 .container {
-    max-width:1100px;
-    margin:auto;
-    padding:14px;
+  max-width: 1100px;
+  margin: auto;
+  padding: 14px;
 }
 
 .panel {
-    margin-bottom:14px;
-    padding:16px;
-    background:linear-gradient(145deg,var(--panel),#091c26);
-    border:1px solid var(--border);
-    border-radius:16px;
+  margin-bottom: 14px;
+  padding: 16px;
+  background: linear-gradient(145deg, var(--panel), #091c26);
+  border: 1px solid var(--border);
+  border-radius: 16px;
 }
 
 .panel-title {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:14px;
-    font-weight:700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  font-weight: 700;
 }
 
 .coordinates {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .coordinate {
-    padding:13px;
-    background:rgba(255,255,255,.035);
-    border:1px solid var(--border);
-    border-radius:12px;
+  padding: 13px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border);
+  border-radius: 12px;
 }
 
 .label {
-    color:var(--muted);
-    font-size:10px;
-    letter-spacing:1px;
-    text-transform:uppercase;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
-.coordinate strong {
-    display:block;
-    margin-top:5px;
-    font-size:16px;
-}
+.coordinate strong { display: block; margin-top: 5px; font-size: 15px; }
 
 .extra {
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:10px;
-    margin-top:10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .extra div {
-    padding:10px;
-    background:rgba(255,255,255,.03);
-    border-radius:10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
 }
 
-.extra strong {
-    display:block;
-    margin-top:5px;
-}
+.extra strong { display: block; margin-top: 5px; }
 
 button {
-    border:0;
-    color:white;
-    cursor:pointer;
-    font:inherit;
-}
-
-.primary,
-.secondary,
-.danger {
-    min-height:45px;
-    padding:10px 15px;
-    border-radius:11px;
-    font-weight:700;
+  border: 0;
+  color: white;
+  cursor: pointer;
+  font: inherit;
 }
 
 .primary {
-    width:100%;
-    margin-top:14px;
-    background:linear-gradient(135deg,var(--blue),var(--blue2));
-}
-
-.secondary {
-    background:var(--panel2);
-    border:1px solid var(--border);
-}
-
-.danger {
-    background:rgba(255,89,94,.12);
-    color:#ff8b8e;
-    border:1px solid rgba(255,89,94,.3);
-}
-
-button:disabled {
-    opacity:.6;
-    cursor:wait;
-}
-
-.row {
-    display:grid;
-    grid-template-columns:1fr auto;
-    gap:8px;
-}
-
-.buttons {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
-}
-
-input {
-    width:100%;
-    min-height:45px;
-    padding:10px 12px;
-    color:white;
-    background:#071923;
-    border:1px solid var(--border);
-    border-radius:11px;
-    outline:none;
-}
-
-input:focus {
-    border-color:var(--blue);
-}
-
-.message,
-.hint {
-    margin-top:9px;
-    color:var(--muted);
-    font-size:12px;
+  width: 100%;
+  min-height: 45px;
+  margin-top: 14px;
+  padding: 10px 15px;
+  border-radius: 11px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .message {
-    color:var(--orange);
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .grid {
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
 
 .card {
-    min-height:110px;
-    padding:12px;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    background:linear-gradient(
-        145deg,
-        rgba(0,168,232,.08),
-        rgba(255,255,255,.025)
-    );
-    border:1px solid var(--border);
-    border-radius:12px;
+  min-height: 100px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(145deg, rgba(0, 168, 232, 0.08), rgba(255, 255, 255, 0.025));
+  border: 1px solid var(--border);
+  border-radius: 12px;
 }
 
-.icon {
-    font-size:22px;
-}
-
-.card span {
-    color:var(--muted);
-    font-size:11px;
-}
-
-.card strong {
-    font-size:17px;
-}
+.card span { color: var(--muted); font-size: 11px; }
+.card strong { font-size: 16px; }
 
 .updated {
-    margin-top:10px;
-    color:var(--muted);
-    font-size:11px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
 }
 
 .refresh {
-    width:38px;
-    height:38px;
-    border-radius:50%;
-    background:var(--panel2);
-    border:1px solid var(--border);
-    font-size:22px;
-}
-
-.waypoints {
-    display:grid;
-    grid-template-columns:1fr 1fr 1fr;
-    gap:10px;
-    margin-bottom:12px;
-}
-
-.waypoints div {
-    padding:11px;
-    background:rgba(255,255,255,.03);
-    border-radius:10px;
-}
-
-.waypoints strong {
-    display:block;
-    margin-top:5px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  font-size: 16px;
 }
 
 #map {
-    width:100%;
-    height:430px;
-    border-radius:12px;
-    overflow:hidden;
-    border:1px solid var(--border);
+  width: 100%;
+  height: 400px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
 }
 
-.note {
-    margin-top:8px;
-    color:var(--muted);
-    font-size:10px;
-    line-height:1.4;
-}
-
-.warning {
-    padding:12px;
-    color:#ffd166;
-    background:rgba(255,183,3,.08);
-    border:1px solid rgba(255,183,3,.2);
-    border-radius:10px;
-    line-height:1.5;
+.warning-card {
+  padding: 12px;
+  color: #ffd166;
+  background: rgba(255, 183, 3, 0.08);
+  border: 1px solid rgba(255, 183, 3, 0.2);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .footer {
-    padding:20px;
-    text-align:center;
-    color:var(--muted);
-    font-size:11px;
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 11px;
 }
 
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-    background:#0c222d;
-    color:white;
-}
-
-@media(max-width:600px) {
-
-    .grid {
-        grid-template-columns:1fr 1fr;
-    }
-
-    .waypoints {
-        grid-template-columns:1fr 1fr;
-    }
-
-    .waypoints div:first-child {
-        grid-column:1 / -1;
-    }
-
-    #map {
-        height:390px;
-    }
-}
-
-@media(max-width:380px) {
-
-    .grid {
-        grid-template-columns:1fr;
-    }
-
-    .coordinates,
-    .extra,
-    .buttons {
-        grid-template-columns:1fr;
-    }
+@media (max-width: 600px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+  .extra { grid-template-columns: 1fr; }
+  #map { height: 350px; }
 }
 </style>
 </head>
-
 <body>
 
 <header class="header">
-
-    <div>
-        <div class="title">⚓ NavMeteo</div>
-        <div class="subtitle">
-            GPS • Meteo • Mare • Waypoint
-        </div>
-    </div>
-
-    <div id="status" class="status"></div>
-
+  <div>
+    <div class="title">NavMeteo</div>
+    <div class="subtitle">Nautica & Meteo Marino</div>
+  </div>
+  <div id="status" class="status"></div>
 </header>
-
 
 <main class="container">
 
-
-<!-- POSIZIONE -->
-
-<section class="panel">
-
+  <!-- POSIZIONE GPS -->
+  <section class="panel">
     <div class="panel-title">
-        <span>📍 Posizione GPS</span>
-        <span id="gpsState">Non attivo</span>
+      <span><i class="fa-solid fa-location-crosshairs"></i> Posizione GPS</span> 
+      <span id="gpsState" style="color: var(--muted); font-size: 12px;">Non attivo</span>
     </div>
-
     <div class="coordinates">
-
-        <div class="coordinate">
-            <span class="label">Latitudine</span>
-            <strong id="lat">--</strong>
-        </div>
-
-        <div class="coordinate">
-            <span class="label">Longitudine</span>
-            <strong id="lon">--</strong>
-        </div>
-
+      <div class="coordinate">
+        <span class="label">Latitudine</span>
+        <strong id="lat">--</strong>
+      </div>
+      <div class="coordinate">
+        <span class="label">Longitudine</span>
+        <strong id="lon">--</strong>
+      </div>
     </div>
-
     <div class="extra">
-
-        <div>
-            <span class="label">Precisione</span>
-            <strong id="accuracy">--</strong>
-        </div>
-
-        <div>
-            <span class="label">Velocità</span>
-            <strong id="speed">--</strong>
-        </div>
-
-        <div>
-            <span class="label">Direzione</span>
-            <strong id="heading">--</strong>
-        </div>
-
+      <div>
+        <span class="label">Precisione</span>
+        <strong id="accuracy">--</strong>
+      </div>
+      <div>
+        <span class="label">Velocità</span>
+        <strong id="speed">--</strong>
+      </div>
+      <div>
+        <span class="label">Direzione</span>
+        <strong id="heading">--</strong>
+      </div>
     </div>
-
-    <button id="gpsButton" class="primary">
-        📡 Usa la mia posizione
+    <button id="gpsButton" class="primary" onclick="startGPS()">
+      <i class="fa-solid fa-satellite"></i> Usa la mia posizione 
     </button>
-
     <div id="gpsMessage" class="message"></div>
+  </section>
 
-</section>
-
-
-<!-- COORDINATE -->
-
-<section class="panel">
-
+  <!-- MAPPA & CARTA NAUTICA -->
+  <section class="panel">
     <div class="panel-title">
-        🔎 Cerca coordinate
+      <span><i class="fa-solid fa-map"></i> Carta Nautica</span>
     </div>
-
-    <div class="row">
-
-        <input
-            id="coordinatesInput"
-            placeholder="41.9028, 12.4964"
-            inputmode="decimal">
-
-        <button
-            id="goButton"
-            class="secondary">
-            Vai
-        </button>
-
-    </div>
-
-    <div class="hint">
-        Inserisci latitudine e longitudine separate da una virgola.
-    </div>
-
-</section>
-
-
-<!-- METEO -->
-
-<section class="panel">
-
-    <div class="panel-title">
-
-        <span>🌦️ Meteo reale</span>
-
-        <button
-            id="refresh"
-            class="refresh">
-            ↻
-        </button>
-
-    </div>
-
-
-    <div class="grid">
-
-        <div class="card">
-            <div class="icon">🌡️</div>
-            <span>Temperatura</span>
-            <strong id="temperature">-- °C</strong>
-        </div>
-
-        <div class="card">
-            <div class="icon">💨</div>
-            <span>Vento</span>
-            <strong id="wind">-- kn</strong>
-        </div>
-
-        <div class="card">
-            <div class="icon">🧭</div>
-            <span>Direzione vento</span>
-            <strong id="windDirection">--</strong>
-        </div>
-
-        <div class="card">
-            <div class="icon">🌧️</div>
-            <span>Precipitazioni</span>
-            <strong id="rain">-- mm</strong>
-        </div>
-
-        <div class="card">
-            <div class="icon">⏱️</div>
-            <span>Pressione</span>
-            <strong id="pressure">-- hPa</strong>
-        </div>
-
-        <div class="card">
-            <div class="icon">☁️</div>
-            <span>Condizioni</span>
-            <strong id="condition">--</strong>
-        </div>
-
-    </div>
-
-    <div id="updated" class="updated">
-        Ultimo aggiornamento: --
-    </div>
-
-</section>
-
-
-<!-- MARE -->
-
-<section class="panel">
-
-    <div class="panel-title">
-        🌊 Condizioni del mare
-    </div>
-
-    <div class="grid">
-
-        <div class="card">
-            <div class="icon">🌊</div>
-            <span>Altezza onda</span>
-            <strong id="waveHeight">-- m</strong>
-        </div>
-
-        <div class="card">
-            <div class="icon">🧭</div>
-            <span>Direzione onda</span>
-            <strong id="waveDirection">--</strong>
-        </div>
-
-        <div class="card">
-            <div class="icon">〰️</div>
-            <span>Periodo onda</span>
-            <strong id="wavePeriod">-- s</strong>
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- WAYPOINT -->
-
-<section class="panel">
-
-    <div class="panel-title">
-        ⚓ Waypoint
-    </div>
-
-    <div class="waypoints">
-
-        <div>
-            <span class="label">Nome</span>
-            <strong id="waypointName">Nessuno</strong>
-        </div>
-
-        <div>
-            <span class="label">Distanza</span>
-            <strong id="distance">--</strong>
-        </div>
-
-        <div>
-            <span class="label">Rilevamento</span>
-            <strong id="bearing">--</strong>
-        </div>
-
-    </div>
-
-    <div class="buttons">
-
-        <button
-            id="saveWaypoint"
-            class="secondary">
-            ⚓ Salva posizione
-        </button>
-
-        <button
-            id="clearWaypoint"
-            class="danger">
-            Cancella
-        </button>
-
-    </div>
-
-    <div class="hint">
-        Puoi anche toccare direttamente un punto sulla carta.
-    </div>
-
-</section>
-
-
-<!-- MAPPA -->
-
-<section class="panel">
-
-    <div class="panel-title">
-        🗺️ Carta nautica di riferimento
-    </div>
-
     <div id="map"></div>
+  </section>
 
-    <div class="note">
-        La mappa utilizza OpenStreetMap con overlay OpenSeaMap.
-        Non è una carta nautica ufficiale.
-    </div>
-
-</section>
-
-
-<!-- INFORMAZIONI -->
-
-<section class="panel">
-
+  <!-- METEO MARINO -->
+  <section class="panel">
     <div class="panel-title">
-        ℹ️ Avvertenza
+      <span><i class="fa-solid fa-wind"></i> Meteo Reale in Mare</span>
+      <button id="refresh" class="refresh" onclick="refreshWeather()">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
     </div>
-
-    <div class="warning">
-
-        Questa applicazione utilizza dati meteorologici e geografici
-        forniti da servizi esterni. Per la navigazione reale utilizzare
-        sempre carte nautiche aggiornate, avvisi ai naviganti e
-        bollettini ufficiali.
-
+    <div class="grid">
+      <div class="card">
+        <span>Temperatura</span>
+        <strong id="temperature">-- °C</strong>
+      </div>
+      <div class="card">
+        <span>Vento</span>
+        <strong id="wind">-- kn</strong>
+      </div>
+      <div class="card">
+        <span>Direzione Vento</span>
+        <strong id="windDirection">--</strong>
+      </div>
+      <div class="card">
+        <span>Precipitazioni</span>
+        <strong id="rain">-- mm</strong>
+      </div>
+      <div class="card">
+        <span>Pressione</span>
+        <strong id="pressure">-- hPa</strong>
+      </div>
+      <div class="card">
+        <span>Condizioni</span>
+        <strong id="condition">--</strong>
+      </div>
     </div>
+    <div class="updated">
+      <span id="updated">Ultimo aggiornamento: --</span>
+      <span id="timerCountdown">Aggiornamento automatico: 60s</span>
+    </div>
+  </section>
 
-</section>
+  <!-- CONDIZIONI MARE -->
+  <section class="panel">
+    <div class="panel-title">
+      <span><i class="fa-solid fa-water"></i> Condizioni del Mare</span>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <span>Altezza Onda</span>
+        <strong id="waveHeight">-- m</strong>
+      </div>
+      <div class="card">
+        <span>Direzione Onda</span>
+        <strong id="waveDirection">--</strong>
+      </div>
+      <div class="card">
+        <span>Periodo Onda</span>
+        <strong id="wavePeriod">-- s</strong>
+      </div>
+    </div>
+  </section>
+
+  <!-- AVVERTENZA -->
+  <section class="panel">
+    <div class="panel-title">Avvertenza ℹ</div>
+    <div class="warning-card">
+      Questa applicazione utilizza dati meteorologici e geografici forniti da servizi esterni. Per la navigazione reale utilizzare sempre carte nautiche ufficiali e aggiornate.
+    </div>
+  </section>
 
 </main>
 
-
 <footer class="footer">
-    NavMeteo Nautica
+  NavMeteo Nautica
 </footer>
 
-
+<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-
 <script>
-
 /* =========================================================
-   NAVMETEO
+   STATO APPLICAZIONE
    ========================================================= */
-
 const state = {
-
-    lat:null,
-    lon:null,
-
-    accuracy:null,
-    speed:null,
-    heading:null,
-
-    map:null,
-    marker:null,
-    accuracyCircle:null,
-    waypointMarker:null,
-
-    waypoint:null,
-
-    centered:false
-
+  lat: 41.1259,
+  lon: 16.8721,
+  accuracy: null,
+  speed: null,
+  heading: null,
+  map: null,
+  marker: null,
+  accuracyCircle: null,
+  timerSeconds: 60
 };
 
+const $ = id => document.getElementById(id);
 
-/* ---------------------------------------------------------
-   ELEMENTI
---------------------------------------------------------- */
+/* =========================================================
+   INIZIALIZZAZIONE MAPPA E CARTA NAUTICA
+   ========================================================= */
+state.map = L.map("map").setView([state.lat, state.lon], 10);
 
-const $ = id =>
-    document.getElementById(id);
+// Base Map OpenStreetMap
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 18,
+  attribution: "&copy; OpenStreetMap contributors"
+}).addTo(state.map);
 
+// Overlay Segnalamenti Nautici OpenSeaMap
+L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
+  maxZoom: 18,
+  opacity: 0.85,
+  attribution: "Segnalamenti &copy; OpenSeaMap"
+}).addTo(state.map);
 
-/* ---------------------------------------------------------
-   MAPPA
---------------------------------------------------------- */
-
-state.map = L.map("map");
-
-
-L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {
-        maxZoom:19,
-        attribution:
-            "&copy; OpenStreetMap contributors"
-    }
-).addTo(state.map);
-
-
-/* Overlay segnalamenti */
-
-L.tileLayer(
-    "https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
-    {
-        maxZoom:18,
-        opacity:.85,
-        attribution:
-            "Segnalamenti &copy; OpenSeaMap contributors"
-    }
-).addTo(state.map);
-
-
-/* Posizione iniziale indicativa */
-
-state.map.setView(
-    [41.9028,12.4964],
-    6
-);
-
-
-/* Click sulla carta */
-
-state.map.on(
-    "click",
-    event => {
-
-        createWaypoint(
-            event.latlng.lat,
-            event.latlng.lng,
-            "Waypoint carta"
-        );
-
-    }
-);
-
-
-/* ---------------------------------------------------------
-   GPS
---------------------------------------------------------- */
-
-$("gpsButton").addEventListener(
-    "click",
-    startGPS
-);
-
-
+/* =========================================================
+   LOGICA GPS
+   ========================================================= */
 function startGPS() {
-
-    if (!navigator.geolocation) {
-
-        $("gpsMessage").textContent =
-            "La geolocalizzazione non è supportata.";
-
-        return;
-
-    }
-
-
-    $("gpsButton").disabled = true;
-
-    $("gpsButton").textContent =
-        "📡 Ricerca posizione...";
-
-    $("gpsState").textContent =
-        "Ricerca GPS...";
-
-
-    requestCompass();
-
-
-    navigator.geolocation.getCurrentPosition(
-
-        position => {
-
-            updatePosition(position);
-
-            startGPSWatch();
-
-        },
-
-        gpsError,
-
-        {
-            enableHighAccuracy:true,
-            timeout:15000,
-            maximumAge:0
-        }
-
-    );
-
+  if (!navigator.geolocation) {
+    $("gpsMessage").textContent = "Geolocalizzazione non supportata dal browser.";
+    return;
+  }
+  $("gpsButton").disabled = true;
+  $("gpsButton").textContent = "Ricerca posizione...";
+  $("gpsState").textContent = "Ricerca GPS...";
+  
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      updatePosition(pos);
+      navigator.geolocation.watchPosition(updatePosition, gpsError, { enableHighAccuracy: true });
+    },
+    gpsError,
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
 }
-
-
-/* Aggiornamento continuo */
-
-function startGPSWatch() {
-
-    navigator.geolocation.watchPosition(
-
-        updatePosition,
-
-        gpsError,
-
-        {
-            enableHighAccuracy:true,
-            timeout:20000,
-            maximumAge:5000
-        }
-
-    );
-
-}
-
-
-/* ---------------------------------------------------------
-   POSIZIONE
---------------------------------------------------------- */
 
 function updatePosition(position) {
+  const c = position.coords;
+  state.lat = c.latitude;
+  state.lon = c.longitude;
+  state.accuracy = c.accuracy;
+  state.speed = c.speed;
+  if (c.heading !== null && Number.isFinite(c.heading)) state.heading = c.heading;
 
-    const c =
-        position.coords;
+  $("lat").textContent = formatCoord(state.lat, true);
+  $("lon").textContent = formatCoord(state.lon, false);
+  $("accuracy").textContent = state.accuracy ? Math.round(state.accuracy) + " m" : "--";
+  $("speed").textContent = state.speed !== null && state.speed >= 0 ? (state.speed * 1.94384).toFixed(1) + " kn" : "--";
+  $("heading").textContent = state.heading !== null ? Math.round(state.heading) + "° " + cardinal(state.heading) : "--";
 
+  updateMarker();
+  loadWeather(state.lat, state.lon);
 
-    state.lat =
-        c.latitude;
-
-    state.lon =
-        c.longitude;
-
-    state.accuracy =
-        c.accuracy;
-
-    state.speed =
-        c.speed;
-
-
-    if (
-        c.heading !== null &&
-        Number.isFinite(c.heading)
-    ) {
-
-        state.heading =
-            c.heading;
-
-    }
-
-
-    renderPosition();
-
-    updateMarker();
-
-    updateWaypointData();
-
-    loadWeather(
-        state.lat,
-        state.lon
-    );
-
-
-    $("gpsState").textContent =
-        "GPS attivo";
-
-
-    $("gpsButton").disabled =
-        false;
-
-
-    $("gpsButton").textContent =
-        "📡 Posizione aggiornata";
-
-
-    $("gpsMessage").textContent =
-        "Posizione GPS acquisita.";
-
+  $("gpsState").textContent = "GPS attivo";
+  $("gpsButton").disabled = false;
+  $("gpsButton").textContent = "Posizione aggiornata";
 }
-
-
-/* ---------------------------------------------------------
-   RENDER GPS
---------------------------------------------------------- */
-
-function renderPosition() {
-
-    $("lat").textContent =
-        formatCoord(
-            state.lat,
-            true
-        );
-
-
-    $("lon").textContent =
-        formatCoord(
-            state.lon,
-            false
-        );
-
-
-    $("accuracy").textContent =
-        state.accuracy !== null
-            ? Math.round(state.accuracy) + " m"
-            : "--";
-
-
-    $("speed").textContent =
-        state.speed !== null &&
-        state.speed >= 0
-            ? (state.speed * 1.94384).toFixed(1) + " kn"
-            : "--";
-
-
-    $("heading").textContent =
-        state.heading !== null
-            ? Math.round(state.heading) +
-              "° " +
-              cardinal(state.heading)
-            : "--";
-
-}
-
-
-/* ---------------------------------------------------------
-   MARKER POSIZIONE
---------------------------------------------------------- */
 
 function updateMarker() {
+  const pos = [state.lat, state.lon];
+  
+  if (!state.marker) {
+    state.marker = L.circleMarker(pos, {
+      radius: 8,
+      color: "#ffffff",
+      weight: 2,
+      fillColor: "#00a8e8",
+      fillOpacity: 1
+    }).addTo(state.map);
+  } else {
+    state.marker.setLatLng(pos);
+  }
 
-    const position =
-        [state.lat,state.lon];
-
-
-    if (!state.marker) {
-
-        state.marker =
-            L.circleMarker(
-                position,
-                {
-                    radius:9,
-                    color:"#fff",
-                    weight:3,
-                    fillColor:"#00a8e8",
-                    fillOpacity:1
-                }
-            ).addTo(state.map);
-
-        state.marker.bindPopup(
-            "📍 Posizione GPS"
-        );
-
-    } else {
-
-        state.marker.setLatLng(
-            position
-        );
-
-    }
-
-
+  if (state.accuracy) {
     if (!state.accuracyCircle) {
-
-        state.accuracyCircle =
-            L.circle(
-                position,
-                {
-                    radius:
-                        state.accuracy || 20,
-                    color:"#00a8e8",
-                    weight:1,
-                    fillColor:"#00a8e8",
-                    fillOpacity:.08
-                }
-            ).addTo(state.map);
-
+      state.accuracyCircle = L.circle(pos, {
+        radius: state.accuracy,
+        color: "#00a8e8",
+        weight: 1,
+        fillColor: "#00a8e8",
+        fillOpacity: 0.15
+      }).addTo(state.map);
     } else {
-
-        state.accuracyCircle.setLatLng(
-            position
-        );
-
-        state.accuracyCircle.setRadius(
-            state.accuracy || 20
-        );
-
+      state.accuracyCircle.setLatLng(pos);
+      state.accuracyCircle.setRadius(state.accuracy);
     }
+  }
 
-
-    if (!state.centered) {
-
-        state.centered = true;
-
-        state.map.setView(
-            position,
-            13
-        );
-
-    }
-
+  state.map.setView(pos, 12);
 }
 
-
-/* ---------------------------------------------------------
-   COORDINATE MANUALI
---------------------------------------------------------- */
-
-$("goButton").addEventListener(
-    "click",
-    goCoordinates
-);
-
-
-$("coordinatesInput").addEventListener(
-    "keydown",
-    e => {
-
-        if (e.key === "Enter")
-            goCoordinates();
-
-    }
-);
-
-
-function goCoordinates() {
-
-    const text =
-        $("coordinatesInput").value.trim();
-
-
-    const parts =
-        text.split(",");
-
-
-    if (parts.length !== 2) {
-
-        alert(
-            "Formato: latitudine, longitudine"
-        );
-
-        return;
-
-    }
-
-
-    const lat =
-        Number(parts[0].trim());
-
-    const lon =
-        Number(parts[1].trim());
-
-
-    if (
-        !Number.isFinite(lat) ||
-        !Number.isFinite(lon) ||
-        lat < -90 ||
-        lat > 90 ||
-        lon < -180 ||
-        lon > 180
-    ) {
-
-        alert(
-            "Coordinate non valide."
-        );
-
-        return;
-
-    }
-
-
-    state.lat = lat;
-    state.lon = lon;
-
-    state.accuracy = null;
-    state.speed = null;
-
-
-    renderPosition();
-
-
-    state.map.setView(
-        [lat,lon],
-        13
-    );
-
-
-    updateMarker();
-
-    loadWeather(
-        lat,
-        lon
-    );
-
-    updateWaypointData();
-
+function gpsError(err) {
+  $("gpsMessage").textContent = "Impossibile rilevare la posizione GPS.";
+  $("gpsState").textContent = "GPS non disponibile";
+  $("gpsButton").disabled = false;
+  $("gpsButton").textContent = "Usa la mia posizione";
 }
 
+/* =========================================================
+   METEO & MARE (AGGIORNAMENTO OGNI 60 SECONDI)
+   ========================================================= */
+async function loadWeather(lat, lon) {
+  try {
+    const weatherURL = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m,precipitation,surface_pressure,weather_code&wind_speed_unit=kn`;
+    const marineURL = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=wave_height,wave_direction,wave_period`;
 
-/* ---------------------------------------------------------
-   METEO
---------------------------------------------------------- */
+    const [wRes, mRes] = await Promise.all([fetch(weatherURL), fetch(marineURL)]);
+    if (!wRes.ok || !mRes.ok) throw new Error();
 
-async function loadWeather(
-    lat,
-    lon
-) {
+    const wData = await wRes.json();
+    const mData = await mRes.json();
 
-    try {
+    renderWeather(wData.current);
+    renderMarine(mData.current);
 
-        $("updated").textContent =
-            "Aggiornamento meteo...";
-
-
-        const weatherURL =
-            "https://api.open-meteo.com/v1/forecast" +
-
-            "?latitude=" +
-            encodeURIComponent(lat) +
-
-            "&longitude=" +
-            encodeURIComponent(lon) +
-
-            "&current=" +
-
-            "temperature_2m," +
-            "wind_speed_10m," +
-            "wind_direction_10m," +
-            "precipitation," +
-            "surface_pressure," +
-            "weather_code" +
-
-            "&temperature_unit=celsius" +
-
-            "&wind_speed_unit=kn" +
-
-            "&precipitation_unit=mm" +
-
-            "&timezone=auto";
-
-
-        const marineURL =
-            "https://marine-api.open-meteo.com/v1/marine" +
-
-            "?latitude=" +
-            encodeURIComponent(lat) +
-
-            "&longitude=" +
-            encodeURIComponent(lon) +
-
-            "&current=" +
-
-            "wave_height," +
-            "wave_direction," +
-            "wave_period" +
-
-            "&timezone=auto";
-
-
-        const [
-            weatherResponse,
-            marineResponse
-        ] =
-            await Promise.all([
-
-                fetch(weatherURL),
-
-                fetch(marineURL)
-
-            ]);
-
-
-        if (!weatherResponse.ok)
-            throw new Error("Errore meteo");
-
-
-        if (!marineResponse.ok)
-            throw new Error("Errore mare");
-
-
-        const weather =
-            await weatherResponse.json();
-
-
-        const marine =
-            await marineResponse.json();
-
-
-        renderWeather(
-            weather
-        );
-
-
-        renderMarine(
-            marine
-        );
-
-
-        $("updated").textContent =
-            "Ultimo aggiornamento: " +
-            new Date().toLocaleString(
-                "it-IT"
-            );
-
-    }
-
-    catch(error) {
-
-        console.error(error);
-
-        $("updated").textContent =
-            "Errore nell'aggiornamento meteo.";
-
-    }
-
+    $("updated").textContent = "Ultimo aggiornamento: " + new Date().toLocaleTimeString('it-IT');
+  } catch (e) {
+    $("updated").textContent = "Errore nel caricamento dei dati meteo.";
+  }
 }
 
-
-/* ---------------------------------------------------------
-   RENDER METEO
---------------------------------------------------------- */
-
-function renderWeather(data) {
-
-    if (!data.current)
-        return;
-
-
-    const c =
-        data.current;
-
-
-    $("temperature").textContent =
-        c.temperature_2m !== undefined
-            ? Number(c.temperature_2m).toFixed(1) + " °C"
-            : "-- °C";
-
-
-    $("wind").textContent =
-        c.wind_speed_10m !== undefined
-            ? Number(c.wind_speed_10m).toFixed(1) + " kn"
-            : "-- kn";
-
-
-    $("windDirection").textContent =
-        c.wind_direction_10m !== undefined
-            ? Math.round(c.wind_direction_10m) +
-              "° " +
-              cardinal(c.wind_direction_10m)
-            : "--";
-
-
-    $("rain").textContent =
-        c.precipitation !== undefined
-            ? Number(c.precipitation).toFixed(1) + " mm"
-            : "-- mm";
-
-
-    $("pressure").textContent =
-        c.surface_pressure !== undefined
-            ? Math.round(c.surface_pressure) + " hPa"
-            : "-- hPa";
-
-
-    $("condition").textContent =
-        weatherDescription(
-            c.weather_code
-        );
-
+function renderWeather(c) {
+  if (!c) return;
+  $("temperature").textContent = c.temperature_2m !== undefined ? c.temperature_2m.toFixed(1) + " °C" : "--";
+  $("wind").textContent = c.wind_speed_10m !== undefined ? c.wind_speed_10m.toFixed(1) + " kn" : "--";
+  $("windDirection").textContent = c.wind_direction_10m !== undefined ? Math.round(c.wind_direction_10m) + "° " + cardinal(c.wind_direction_10m) : "--";
+  $("rain").textContent = c.precipitation !== undefined ? c.precipitation.toFixed(1) + " mm" : "--";
+  $("pressure").textContent = c.surface_pressure !== undefined ? Math.round(c.surface_pressure) + " hPa" : "--";
+  $("condition").textContent = weatherDescription(c.weather_code);
 }
 
-
-/* ---------------------------------------------------------
-   MARE
---------------------------------------------------------- */
-
-function renderMarine(data) {
-
-    if (!data.current)
-        return;
-
-
-    const c =
-        data.current;
-
-
-    $("waveHeight").textContent =
-        c.wave_height !== undefined
-            ? Number(c.wave_height).toFixed(1) + " m"
-            : "-- m";
-
-
-    $("waveDirection").textContent =
-        c.wave_direction !== undefined
-            ? Math.round(c.wave_direction) +
-              "° " +
-              cardinal(c.wave_direction)
-            : "--";
-
-
-    $("wavePeriod").textContent =
-        c.wave_period !== undefined
-            ? Number(c.wave_period).toFixed(1) + " s"
-            : "-- s";
-
+function renderMarine(c) {
+  if (!c) return;
+  $("waveHeight").textContent = c.wave_height !== undefined ? c.wave_height.toFixed(1) + " m" : "--";
+  $("waveDirection").textContent = c.wave_direction !== undefined ? Math.round(c.wave_direction) + "° " + cardinal(c.wave_direction) : "--";
+  $("wavePeriod").textContent = c.wave_period !== undefined ? c.wave_period.toFixed(1) + " s" : "--";
 }
 
+function refreshWeather() {
+  loadWeather(state.lat, state.lon);
+  state.timerSeconds = 60;
+}
 
-/* ---------------------------------------------------------
-   CODICI METEO
---------------------------------------------------------- */
+// Conto alla rovescia e aggiornamento automatico 60s
+setInterval(() => {
+  state.timerSeconds--;
+  if (state.timerSeconds <= 0) {
+    refreshWeather();
+    state.timerSeconds = 60;
+  }
+  $("timerCountdown").textContent = `Aggiornamento automatico: ${state.timerSeconds}s`;
+}, 1000);
+
+/* =========================================================
+   FUNZIONI AUSILIARIE
+   ========================================================= */
+function cardinal(deg) {
+  const dirs = ["N","NE","E","SE","S","SW","W","NW"];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function formatCoord(val, isLat) {
+  if (val === null) return "--";
+  const dir = isLat ? (val >= 0 ? "N" : "S") : (val >= 0 ? "E" : "W");
+  return Math.abs(val).toFixed(5) + "° " + dir;
+}
 
 function weatherDescription(code) {
-
-    const list = {
-
-        0:"Sereno",
-        1:"Prevalentemente sereno",
-        2:"Parzialmente nuvoloso",
-        3:"Nuvoloso",
-
-        45:"Nebbia",
-        48:"Nebbia",
-
-        51:"Pioviggine",
-        53:"Pioviggine",
-        55:"Pioviggine",
-
-        56:"Pioviggine gelata",
-        57:"Pioviggine gelata",
-
-        61:"Pioggia",
-        63:"Pioggia",
-        65:"Pioggia intensa",
-
-        66:"Pioggia gelata",
-        67:"Pioggia gelata",
-
-        71:"Neve",
-        73:"Neve",
-        75:"Neve intensa",
-        77:"Neve",
-
-        80:"Rovesci",
-        81:"Rovesci",
-        82:"Rovesci intensi",
-
-        85:"Rovesci di neve",
-        86:"Rovesci di neve",
-
-        95:"Temporale",
-        96:"Temporale con grandine",
-        99:"Temporale con grandine"
-
-    };
-
-
-    return list[code] ||
-        "Non disponibile";
-
+  const codes = { 0:"Sereno", 1:"Prevalentemente sereno", 2:"Parzialmente nuvoloso", 3:"Nuvoloso", 45:"Nebbia", 61:"Pioggia", 80:"Rovesci", 95:"Temporale" };
+  return codes[code] || "Variabile";
 }
 
-
-/* ---------------------------------------------------------
-   WAYPOINT
---------------------------------------------------------- */
-
-function createWaypoint(
-    lat,
-    lon,
-    name
-) {
-
-    state.waypoint = {
-
-        lat:lat,
-        lon:lon,
-        name:name
-
-    };
-
-
-    if (state.waypointMarker)
-        state.waypointMarker.remove();
-
-
-    state.waypointMarker =
-        L.marker(
-            [lat,lon]
-        ).addTo(state.map);
-
-
-    state.waypointMarker.bindPopup(
-        "⚓ " +
-        name +
-        "<br>" +
-        lat.toFixed(6) +
-        ", " +
-        lon.toFixed(6)
-    );
-
-
-    $("waypointName").textContent =
-        name;
-
-
-    localStorage.setItem(
-        "navmeteoWaypoint",
-        JSON.stringify(
-            state.waypoint
-        )
-    );
-
-
-    updateWaypointData();
-
-}
-
-
-/* Salva posizione corrente */
-
-$("saveWaypoint").addEventListener(
-    "click",
-    () => {
-
-        if (
-            state.lat === null ||
-            state.lon === null
-        ) {
-
-            alert(
-                "Prima acquisisci una posizione GPS o inserisci delle coordinate."
-            );
-
-            return;
-
-        }
-
-
-        const name =
-            prompt(
-                "Nome del waypoint:",
-                "Waypoint"
-            );
-
-
-        if (name === null)
-            return;
-
-
-        createWaypoint(
-            state.lat,
-            state.lon,
-            name.trim() || "Waypoint"
-        );
-
-    }
-);
-
-
-/* Cancella */
-
-$("clearWaypoint").addEventListener(
-    "click",
-    () => {
-
-        state.waypoint =
-            null;
-
-
-        if (state.waypointMarker)
-            state.waypointMarker.remove();
-
-
-        state.waypointMarker =
-            null;
-
-
-        localStorage.removeItem(
-            "navmeteoWaypoint"
-        );
-
-
-        $("waypointName").textContent =
-            "Nessuno";
-
-        $("distance").textContent =
-            "--";
-
-        $("bearing").textContent =
-            "--";
-
-    }
-);
-
-
-/* ---------------------------------------------------------
-   DATI WAYPOINT
---------------------------------------------------------- */
-
-function updateWaypointData() {
-
-    if (
-        !state.waypoint ||
-        state.lat === null ||
-        state.lon === null
-    ) {
-
-        $("distance").textContent =
-            "--";
-
-        $("bearing").textContent =
-            "--";
-
-        return;
-
-    }
-
-
-    const km =
-        distance(
-            state.lat,
-            state.lon,
-            state.waypoint.lat,
-            state.waypoint.lon
-        );
-
-
-    const brg =
-        calculateBearing(
-            state.lat,
-            state.lon,
-            state.waypoint.lat,
-            state.waypoint.lon
-        );
-
-
-    $("distance").textContent =
-        km < 1
-            ? Math.round(km * 1000) + " m"
-            : km.toFixed(2) + " km";
-
-
-    $("bearing").textContent =
-        Math.round(brg) +
-        "° " +
-        cardinal(brg);
-
-}
-
-
-/* ---------------------------------------------------------
-   HAVERSINE
---------------------------------------------------------- */
-
-function distance(
-    lat1,
-    lon1,
-    lat2,
-    lon2
-) {
-
-    const R = 6371;
-
-    const dLat =
-        radians(lat2-lat1);
-
-    const dLon =
-        radians(lon2-lon1);
-
-
-    const a =
-        Math.sin(dLat/2) ** 2 +
-
-        Math.cos(radians(lat1)) *
-        Math.cos(radians(lat2)) *
-
-        Math.sin(dLon/2) ** 2;
-
-
-    const c =
-        2 *
-        Math.atan2(
-            Math.sqrt(a),
-            Math.sqrt(1-a)
-        );
-
-
-    return R*c;
-
-}
-
-
-/* ---------------------------------------------------------
-   BEARING
---------------------------------------------------------- */
-
-function calculateBearing(
-    lat1,
-    lon1,
-    lat2,
-    lon2
-) {
-
-    const p1 =
-        radians(lat1);
-
-    const p2 =
-        radians(lat2);
-
-    const dl =
-        radians(lon2-lon1);
-
-
-    const y =
-        Math.sin(dl) *
-        Math.cos(p2);
-
-
-    const x =
-        Math.cos(p1) *
-        Math.sin(p2) -
-
-        Math.sin(p1) *
-        Math.cos(p2) *
-        Math.cos(dl);
-
-
-    let b =
-        degrees(
-            Math.atan2(y,x)
-        );
-
-
-    return (b+360)%360;
-
-}
-
-
-/* ---------------------------------------------------------
-   BUSSOLA
---------------------------------------------------------- */
-
-function requestCompass() {
-
-    try {
-
-        if (
-            typeof DeviceOrientationEvent !==
-            "undefined" &&
-
-            typeof DeviceOrientationEvent
-                .requestPermission ===
-                "function"
-        ) {
-
-            DeviceOrientationEvent
-                .requestPermission()
-                .then(
-                    permission => {
-
-                        if (
-                            permission === "granted"
-                        ) {
-
-                            enableCompass();
-
-                        }
-
-                    }
-                )
-                .catch(
-                    console.warn
-                );
-
-        } else {
-
-            enableCompass();
-
-        }
-
-    }
-
-    catch(e) {
-
-        console.warn(e);
-
-    }
-
-}
-
-
-function enableCompass() {
-
-    window.addEventListener(
-        "deviceorientationabsolute",
-        orientationHandler,
-        true
-    );
-
-    window.addEventListener(
-        "deviceorientation",
-        orientationHandler,
-        true
-    );
-
-}
-
-
-function orientationHandler(event) {
-
-    let h = null;
-
-
-    if (
-        typeof event.webkitCompassHeading ===
-        "number"
-    ) {
-
-        h =
-            event.webkitCompassHeading;
-
-    }
-
-    else if (
-        typeof event.alpha ===
-        "number"
-    ) {
-
-        h =
-            360-event.alpha;
-
-    }
-
-
-    if (
-        h !== null &&
-        Number.isFinite(h)
-    ) {
-
-        h =
-            (h+360)%360;
-
-
-        state.heading =
-            h;
-
-
-        $("heading").textContent =
-            Math.round(h) +
-            "° " +
-            cardinal(h);
-
-    }
-
-}
-
-
-/* ---------------------------------------------------------
-   GPS ERROR
---------------------------------------------------------- */
-
-function gpsError(error) {
-
-    let msg =
-        "Impossibile ottenere la posizione.";
-
-
-    if (
-        error.code ===
-        error.PERMISSION_DENIED
-    ) {
-
-        msg =
-            "Permesso GPS negato.";
-
-    }
-
-    else if (
-        error.code ===
-        error.POSITION_UNAVAILABLE
-    ) {
-
-        msg =
-            "Posizione GPS non disponibile.";
-
-    }
-
-    else if (
-        error.code ===
-        error.TIMEOUT
-    ) {
-
-        msg =
-            "Timeout GPS.";
-
-    }
-
-
-    $("gpsMessage").textContent =
-        msg;
-
-
-    $("gpsState").textContent =
-        "GPS non disponibile";
-
-
-    $("gpsButton").disabled =
-        false;
-
-
-    $("gpsButton").textContent =
-        "📡 Usa la mia posizione";
-
-}
-
-
-/* ---------------------------------------------------------
-   UTILITÀ
---------------------------------------------------------- */
-
-function radians(x) {
-
-    return x*Math.PI/180;
-
-}
-
-
-function degrees(x) {
-
-    return x*180/Math.PI;
-
-}
-
-
-function cardinal(deg) {
-
-    const dirs = [
-        "N","NE","E","SE",
-        "S","SW","W","NW"
-    ];
-
-
-    return dirs[
-        Math.round(deg/45)%8
-    ];
-
-}
-
-
-function formatCoord(
-    value,
-    latitude
-) {
-
-    if (value === null)
-        return "--";
-
-
-    const direction =
-        latitude
-
-            ? value >= 0
-                ? "N"
-                : "S"
-
-            : value >= 0
-                ? "E"
-                : "W";
-
-
-    return Math.abs(value).toFixed(6) +
-        "° " +
-        direction;
-
-}
-
-
-/* ---------------------------------------------------------
-   CARICA WAYPOINT SALVATO
---------------------------------------------------------- */
-
-const saved =
-    localStorage.getItem(
-        "navmeteoWaypoint"
-    );
-
-
-if (saved) {
-
-    try {
-
-        const w =
-            JSON.parse(saved);
-
-
-        if (
-            typeof w.lat === "number" &&
-            typeof w.lon === "number"
-        ) {
-
-            createWaypoint(
-                w.lat,
-                w.lon,
-                w.name || "Waypoint"
-            );
-
-        }
-
-    }
-
-    catch(e) {
-
-        console.warn(e);
-
-    }
-
-}
-
-
-/* ---------------------------------------------------------
-   STATO INTERNET
---------------------------------------------------------- */
-
-function connection() {
-
-    if (navigator.onLine) {
-
-        $("status")
-            .classList.add("online");
-
-    } else {
-
-        $("status")
-            .classList.remove("online");
-
-    }
-
-}
-
-
-window.addEventListener(
-    "online",
-    connection
-);
-
-window.addEventListener(
-    "offline",
-    connection
-);
-
-connection();
-
-
-/* ---------------------------------------------------------
-   AGGIORNAMENTO MANUALE
---------------------------------------------------------- */
-
-$("refresh").addEventListener(
-    "click",
-    () => {
-
-        if (
-            state.lat !== null &&
-            state.lon !== null
-        ) {
-
-            loadWeather(
-                state.lat,
-                state.lon
-            );
-
-        } else {
-
-            alert(
-                "Prima acquisisci una posizione o inserisci delle coordinate."
-            );
-
-        }
-
-    }
-);
-
+// Stato Connessione
+window.addEventListener("online", () => $("status").classList.add("online"));
+window.addEventListener("offline", () => $("status").classList.remove("online"));
+if (navigator.onLine) $("status").classList.add("online");
+
+// Caricamento dati meteo iniziali
+loadWeather(state.lat, state.lon);
 </script>
 
 </body>
