@@ -1,516 +1,309 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NavMeteo - Dashboard Nautica</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NavMeteo - Navigazione & Meteo Marino</title>
   <style>
     :root {
-      --bg-1: #061a24;
-      --bg-2: #0c2330;
-      --panel: #122b39;
-      --panel-2: #18384b;
-      --card: #0d2230;
-      --edge: rgba(148, 163, 184, 0.2);
-      --text: #ebfaff;
-      --muted: #a6c7d8;
-      --accent: #38bdf8;
-      --accent-2: #0ea5e9;
-      --ok: #34d399;
-      --warn: #fbbf24;
-      --danger: #f87171;
-      --shadow: rgba(0, 0, 0, 0.22);
+      --bg-dark: #0f172a;
+      --panel-bg: #1e293b;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --card-bg: #0f172a;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     }
 
     body {
-      background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
-      color: var(--text);
-      min-height: 100vh;
-      padding: 1rem;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      min-height: 100vh;
+      padding: 1rem;
     }
 
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-      border-bottom: 1px solid var(--edge);
-      padding-bottom: 0.8rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1rem;
     }
 
     h1 {
-      font-size: clamp(1.3rem, 2vw, 1.8rem);
-      letter-spacing: 0.05em;
+      font-size: 1.5rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
     .controls {
       display: flex;
-      flex-wrap: wrap;
       gap: 0.5rem;
-      align-items: center;
     }
 
-    .btn, .link-btn {
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      background: linear-gradient(180deg, var(--accent-2), var(--accent));
+    button {
+      background-color: var(--accent);
       color: white;
-      padding: 0.62rem 0.9rem;
-      border-radius: 8px;
-      font-weight: 700;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
       cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.15s ease, opacity 0.2s ease;
-      box-shadow: 0 8px 18px rgba(14, 165, 233, 0.2);
+      font-weight: 600;
+      transition: background-color 0.2s;
     }
 
-    .btn:hover, .link-btn:hover {
-      transform: translateY(-1px);
+    button:hover {
+      background-color: var(--accent-hover);
     }
 
-    .link-btn {
-      opacity: 0.7;
-      pointer-events: none;
-    }
-
-    .link-btn.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .layout {
+    .grid-container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 1rem;
       flex: 1;
     }
 
     .panel {
-      background: rgba(18, 43, 57, 0.96);
-      border: 1px solid var(--edge);
-      border-radius: 14px;
-      box-shadow: 0 18px 35px var(--shadow);
+      background-color: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
       padding: 1rem;
       display: flex;
       flex-direction: column;
       gap: 1rem;
     }
 
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.5rem;
-      border-bottom: 1px solid var(--edge);
-      padding-bottom: 0.6rem;
-    }
-
     .panel-title {
-      font-size: 0.95rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 800;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
     }
 
-    .status-pill {
-      display: inline-flex;
-      padding: 0.3rem 0.65rem;
-      border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 800;
-      border: 1px solid var(--edge);
-      background: rgba(255,255,255,0.03);
-      color: var(--muted);
-    }
-
-    .status-pill.ok {
-      color: #d1fae5;
-      background: rgba(52, 211, 153, 0.1);
-      border-color: rgba(52, 211, 153, 0.4);
-    }
-
-    .status-pill.warn {
-      color: #fef3c7;
-      background: rgba(251, 191, 36, 0.1);
-      border-color: rgba(251, 191, 36, 0.4);
-    }
-
-    .status-pill.danger {
-      color: #fee2e2;
-      background: rgba(248, 113, 113, 0.12);
-      border-color: rgba(248, 113, 113, 0.4);
-    }
-
-    .alert-banner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      padding: 0.75rem 0.9rem;
-      border-radius: 10px;
-      border: 1px solid var(--edge);
-      background: rgba(255,255,255,0.02);
-      font-size: 0.82rem;
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    .alert-banner.safe {
-      border-color: rgba(52, 211, 153, 0.35);
-      background: rgba(52, 211, 153, 0.08);
-      color: #d1fae5;
-    }
-
-    .alert-banner.warning {
-      border-color: rgba(251, 191, 36, 0.35);
-      background: rgba(251, 191, 36, 0.08);
-      color: #fef3c7;
-    }
-
-    .alert-banner.danger {
-      border-color: rgba(248, 113, 113, 0.35);
-      background: rgba(248, 113, 113, 0.08);
-      color: #fee2e2;
-    }
-
-    .metrics {
+    .data-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(140px, 1fr));
-      gap: 0.8rem;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
     }
 
-    .metric {
-      background: var(--card);
-      border: 1px solid var(--edge);
-      border-radius: 10px;
-      padding: 0.8rem;
-      min-height: 92px;
+    .data-card {
+      background-color: var(--card-bg);
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
     }
 
-    .metric-label {
-      font-size: 0.7rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 0.35rem;
-      font-weight: 700;
-    }
-
-    .metric-value {
-      font-weight: 900;
-      font-size: clamp(1.05rem, 2vw, 1.5rem);
-      line-height: 1.2;
-    }
-
-    .compass-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.5rem 0 0.2rem;
-    }
-
-    .compass {
-      position: relative;
-      width: 170px;
-      height: 170px;
-      border-radius: 50%;
-      background: radial-gradient(circle at center, rgba(56, 189, 248, 0.12), rgba(255,255,255,0.02) 22%, rgba(255,255,255,0.01) 30%, rgba(255,255,255,0.02) 100%);
-      border: 2px solid rgba(56, 189, 248, 0.35);
-      overflow: hidden;
-      box-shadow: inset 0 0 18px rgba(56, 189, 248, 0.08);
-    }
-
-    .compass .rose {
-      position: absolute;
-      inset: 12px;
-      border: 1px solid rgba(166, 199, 216, 0.2);
-      border-radius: 50%;
-    }
-
-    .compass .rose::before,
-    .compass .rose::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 2px;
-      height: 50%;
-      background: rgba(166, 199, 216, 0.18);
-      transform: translate(-50%, -50%);
-    }
-
-    .compass .rose::after {
-      width: 50%;
-      height: 2px;
-    }
-
-    .cardinal {
-      position: absolute;
-      font-weight: 800;
-      color: var(--muted);
+    .data-label {
       font-size: 0.8rem;
-      transform: translate(-50%, -50%);
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
     }
 
-    .cardinal.n { top: 8px; left: 50%; }
-    .cardinal.e { top: 50%; left: calc(100% - 10px); }
-    .cardinal.s { bottom: 8px; left: 50%; }
-    .cardinal.w { top: 50%; left: 10px; }
-
-    .needle {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 4px;
-      height: 62%;
-      background: linear-gradient(180deg, #fca5a5 0%, #ef4444 100%);
-      border-radius: 999px;
-      transform-origin: center bottom;
-      transform: translate(-50%, -100%) rotate(0deg);
-      box-shadow: 0 0 18px rgba(239, 68, 68, 0.45);
+    .data-value {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      word-break: break-all;
     }
 
-    .needle::before {
-      content: "";
-      position: absolute;
-      left: 50%;
-      top: 0;
-      width: 0;
-      height: 0;
-      border-left: 9px solid transparent;
-      border-right: 9px solid transparent;
-      border-bottom: 18px solid #ef4444;
-      transform: translateX(-50%) translateY(-94%);
-    }
-
-    .needle::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      bottom: -8px;
-      width: 10px;
-      height: 10px;
-      background: #ef4444;
-      border-radius: 50%;
-      transform: translateX(-50%);
-      box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
-    }
-
-    .waypoint-box {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--edge);
-      border-radius: 10px;
-      padding: 0.8rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.7rem;
-    }
-
-    .input-grid {
+    .waypoint-inputs {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.6rem;
+      gap: 0.5rem;
+    }
+
+    .speed-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .speed-container label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
     }
 
     input {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 0.5rem;
+      border-radius: 4px;
       width: 100%;
-      background: var(--card);
-      border: 1px solid var(--edge);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 0.7rem 0.75rem;
-      font-size: 0.95rem;
     }
 
     input:focus {
-      outline: 2px solid rgba(56, 189, 248, 0.45);
-      border-color: rgba(56, 189, 248, 0.55);
+      outline: 1px solid var(--accent);
     }
 
-    .summary-row {
-      display: flex;
-      gap: 0.6rem;
-      flex-wrap: wrap;
-      justify-content: space-between;
-    }
-
-    .summary-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.4rem 0.7rem;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--edge);
-      border-radius: 999px;
-      color: var(--muted);
-      font-weight: 700;
-      font-size: 0.78rem;
-    }
-
-    .summary-pill strong {
-      color: var(--text);
-    }
-
-    @media (max-width: 650px) {
-      body { padding: 0.8rem; }
-      .metrics, .input-grid { grid-template-columns: 1fr; }
-      .compass { width: 140px; height: 140px; }
+    @media (max-width: 600px) {
+      body {
+        padding: 0.5rem;
+      }
+      .data-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
+
   <header>
     <h1>⚓ NavMeteo</h1>
     <div class="controls">
-      <button class="btn" id="locate">📍 Posizione</button>
-      <button class="btn" id="refresh">↻ Aggiorna</button>
-      <a id="maps-link" class="link-btn" href="#" target="_blank" rel="noopener noreferrer">🧭 Posizione</a>
-      <a id="wp-link" class="link-btn" href="#" target="_blank" rel="noopener noreferrer">📍 Waypoint</a>
-      <a id="route-link" class="link-btn" href="#" target="_blank" rel="noopener noreferrer">🛥️ Naviga</a>
-      <button class="btn" id="copy-coords">📋 Copia</button>
+      <button id="locate">📍 Posizione</button>
+      <button id="refresh">↻ Aggiorna</button>
     </div>
   </header>
 
-  <main class="layout">
+  <main class="grid-container">
+    <!-- PANNELLO POSIZIONE & NAVIGAZIONE -->
     <section class="panel">
-      <div class="panel-header">
-        <div class="panel-title">Navigazione & GPS</div>
-        <div id="gps-status" class="status-pill warn">GPS non disponibile</div>
-      </div>
-
-      <div id="alert-banner" class="alert-banner warning">
-        <span>Condizioni: monitoraggio in corso</span>
-        <span id="alert-text">Attendi coordinate</span>
-      </div>
-
-      <div class="metrics">
-        <div class="metric">
-          <div class="metric-label">Latitudine</div>
-          <div id="lat" class="metric-value">--</div>
+      <div class="panel-title">Navigazione & GPS</div>
+      <div class="data-grid">
+        <div class="data-card">
+          <div class="data-label">Latitudine</div>
+          <div class="data-value" id="lat">--</div>
         </div>
-
-        <div class="metric">
-          <div class="metric-label">Longitudine</div>
-          <div id="lon" class="metric-value">--</div>
-        </div>
-
-        <div class="metric">
-          <div class="metric-label">Distanza</div>
-          <div id="distance" class="metric-value">--</div>
-        </div>
-
-        <div class="metric">
-          <div class="metric-label">Rilevamento</div>
-          <div id="bearing" class="metric-value">--</div>
+        <div class="data-card">
+          <div class="data-label">Longitudine</div>
+          <div class="data-value" id="lon">--</div>
         </div>
       </div>
 
-      <div class="compass-wrap">
-        <div class="compass" aria-label="bussola">
-          <div class="rose"></div>
-          <div class="cardinal n">N</div>
-          <div class="cardinal e">E</div>
-          <div class="cardinal s">S</div>
-          <div class="cardinal w">W</div>
-          <div id="needle" class="needle"></div>
-        </div>
+      <div class="panel-title" style="margin-top: 0.5rem;">Waypoint Destinazione & Velocità</div>
+      <div class="waypoint-inputs">
+        <input type="number" id="wp-lat" step="any" placeholder="Lat (es. 41.12)">
+        <input type="number" id="wp-lon" step="any" placeholder="Lon (es. 16.86)">
+      </div>
+      
+      <div class="speed-container">
+        <label for="speed-sog">Velocità stimata / SOG (Nodi):</label>
+        <input type="number" id="speed-sog" step="0.1" min="0.1" placeholder="Es. 6.5">
       </div>
 
-      <div class="waypoint-box">
-        <div class="panel-title" style="border-bottom:none; padding:0;">Waypoint</div>
-        <div class="input-grid">
-          <input type="number" id="wp-lat" step="any" placeholder="Lat (es. 41.12)" />
-          <input type="number" id="wp-lon" step="any" placeholder="Lon (es. 16.86)" />
-        </div>
-        <button class="btn" id="set-wp">Imposta Waypoint</button>
-      </div>
+      <button id="set-wp">Calcola Rotta & ETA</button>
 
-      <div class="summary-row">
-        <div class="summary-pill">Ro: <strong id="route-state">--</strong></div>
-        <div class="summary-pill">Vento: <strong id="wind-summary">--</strong></div>
-        <div class="summary-pill">Mare: <strong id="sea-summary">--</strong></div>
+      <div class="data-grid">
+        <div class="data-card">
+          <div class="data-label">Distanza Waypoint</div>
+          <div class="data-value" id="distance">--</div>
+        </div>
+        <div class="data-card">
+          <div class="data-label">Rilevamento (BRG)</div>
+          <div class="data-value" id="bearing">--</div>
+        </div>
+        <div class="data-card">
+          <div class="data-label">Tempo Stimato (ETE)</div>
+          <div class="data-value" id="ete">--</div>
+        </div>
+        <div class="data-card">
+          <div class="data-label">Orario Arrivo (ETA)</div>
+          <div class="data-value" id="eta">--</div>
+        </div>
       </div>
     </section>
 
+    <!-- PANNELLO METEO MARINO -->
     <section class="panel">
-      <div class="panel-header">
-        <div class="panel-title">Meteo & Mare</div>
-      </div>
-
-      <div class="metrics">
-        <div class="metric">
-          <div class="metric-label">Vento</div>
-          <div id="wind-speed" class="metric-value">--</div>
+      <div class="panel-title">Condizioni Meteo & Mare</div>
+      <div class="data-grid">
+        <div class="data-card">
+          <div class="data-label">Vento (Nodo)</div>
+          <div class="data-value" id="wind-speed">--</div>
         </div>
-
-        <div class="metric">
-          <div class="metric-label">Direzione</div>
-          <div id="wind-dir" class="metric-value">--</div>
+        <div class="data-card">
+          <div class="data-label">Direzione Vento</div>
+          <div class="data-value" id="wind-dir">--</div>
         </div>
-
-        <div class="metric">
-          <div class="metric-label">Onde</div>
-          <div id="wave-height" class="metric-value">--</div>
+        <div class="data-card">
+          <div class="data-label">Altezza Onde</div>
+          <div class="data-value" id="wave-height">--</div>
         </div>
-
-        <div class="metric">
-          <div class="metric-label">Periodo</div>
-          <div id="wave-period" class="metric-value">--</div>
+        <div class="data-card">
+          <div class="data-label">Periodo Onde</div>
+          <div class="data-value" id="wave-period">--</div>
         </div>
-
-        <div class="metric">
-          <div class="metric-label">Pressione</div>
-          <div id="pressure" class="metric-value">--</div>
+        <div class="data-card">
+          <div class="data-label">Pressione Atm.</div>
+          <div class="data-value" id="pressure">--</div>
         </div>
-
-        <div class="metric">
-          <div class="metric-label">Temperatura</div>
-          <div id="temp" class="metric-value">--</div>
+        <div class="data-card">
+          <div class="data-label">Temperatura Aria</div>
+          <div class="data-value" id="temp">--</div>
         </div>
       </div>
     </section>
   </main>
 
   <script>
+    /* ---------------------------------------------------------
+       STATO DELL'APPLICAZIONE
+    --------------------------------------------------------- */
     const state = {
       lat: null,
       lon: null,
+      speed: parseFloat(localStorage.getItem("nav_speed")) || 5.0,
       waypoint: JSON.parse(localStorage.getItem("nav_waypoint")) || null
     };
 
+    /* ---------------------------------------------------------
+       UTILITY DOM E CONVERSIONI (DMS)
+    --------------------------------------------------------- */
     const $ = (id) => document.getElementById(id);
+    const radians = (deg) => (deg * Math.PI) / 180;
+    const degrees = (rad) => (rad * 180) / Math.PI;
 
     function cardinal(deg) {
-      const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
-      const index = Math.round(((deg % 360) + 360) % 360 / 22.5) % 16;
+      const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+      const index = Math.round(deg / 22.5) % 16;
       return dirs[index];
     }
 
-    function toRad(v) { return (v * Math.PI) / 180; }
-    function toDeg(v) { return (v * 180) / Math.PI; }
+    function toDMS(coordinate, type) {
+      const absolute = Math.abs(coordinate);
+      const degrees = Math.floor(absolute);
+      const minutesNotTruncated = (absolute - degrees) * 60;
+      const minutes = Math.floor(minutesNotTruncated);
+      const seconds = ((minutesNotTruncated - minutes) * 60).toFixed(0);
+      
+      let direction = "";
+      if (type === 'lat') {
+        direction = coordinate >= 0 ? "N" : "S";
+      } else {
+        direction = coordinate >= 0 ? "E" : "W";
+      }
+      
+      return `${degrees}° ${minutes}' ${seconds}" ${direction}`;
+    }
 
+    /* ---------------------------------------------------------
+       CALCOLI NAUTICI (HAVERSINE, BEARING, ETA/ETE)
+    --------------------------------------------------------- */
     function distanceNM(lat1, lon1, lat2, lon2) {
       const R_NM = 3440.065;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
+      const dLat = radians(lat2 - lat1);
+      const dLon = radians(lon2 - lon1);
 
       const a =
         Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+        Math.cos(radians(lat1)) *
+        Math.cos(radians(lat2)) *
+        Math.sin(dLon / 2) ** 2;
 
       const clampedA = Math.min(1, Math.max(0, a));
       const c = 2 * Math.atan2(Math.sqrt(clampedA), Math.sqrt(1 - clampedA));
@@ -519,189 +312,124 @@
     }
 
     function calculateBearing(lat1, lon1, lat2, lon2) {
-      const φ1 = toRad(lat1);
-      const φ2 = toRad(lat2);
-      const Δλ = toRad(lon2 - lon1);
+      const φ1 = radians(lat1);
+      const φ2 = radians(lat2);
+      const Δλ = radians(lon2 - lon1);
 
       const y = Math.sin(Δλ) * Math.cos(φ2);
       const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
       const θ = Math.atan2(y, x);
 
-      return (toDeg(θ) + 360) % 360;
-    }
-
-    function setGPSStatus(text, kind = "") {
-      const el = $("gps-status");
-      el.textContent = text;
-      el.classList.remove("ok", "warn", "danger");
-      if (kind) el.classList.add(kind);
-    }
-
-    function updateCompass(bearing) {
-      const needle = $("needle");
-      if (!needle) return;
-      const normalized = (Number(bearing) || 0) % 360;
-      needle.style.transform = `translate(-50%, -100%) rotate(${normalized}deg)`;
-    }
-
-    function updateMapLinks() {
-      const mapsLink = $("maps-link");
-      const wpLink = $("wp-link");
-      const routeLink = $("route-link");
-
-      if (state.lat !== null && state.lon !== null) {
-        mapsLink.href = `https://www.google.com/maps?q=${state.lat},${state.lon}`;
-        mapsLink.classList.add("active");
-        setGPSStatus("GPS attivo", "ok");
-      } else {
-        mapsLink.href = "#";
-        mapsLink.classList.remove("active");
-        setGPSStatus("GPS non disponibile", "warn");
-      }
-
-      if (state.waypoint && state.waypoint.lat != null && state.waypoint.lon != null) {
-        wpLink.href = `https://www.google.com/maps?q=${state.waypoint.lat},${state.waypoint.lon}`;
-        wpLink.classList.add("active");
-
-        if (state.lat !== null && state.lon !== null) {
-          routeLink.href = `https://www.google.com/maps/dir/${state.lat},${state.lon}/${state.waypoint.lat},${state.waypoint.lon}`;
-          routeLink.classList.add("active");
-        } else {
-          routeLink.href = "#";
-          routeLink.classList.remove("active");
-        }
-      } else {
-        wpLink.href = "#";
-        wpLink.classList.remove("active");
-        routeLink.href = "#";
-        routeLink.classList.remove("active");
-      }
-    }
-
-    function weatherSeverity() {
-      const wind = parseFloat($("wind-speed").textContent) || 0;
-      const wave = parseFloat($("wave-height").textContent) || 0;
-
-      if (!wind && !wave) {
-        return { level: "safe", label: "Attendi dati", badge: "monitoraggio in corso" };
-      }
-
-      if (wind >= 25 || wave >= 2.5) {
-        return { level: "danger", label: "Mare agitato", badge: "attenzione" };
-      }
-
-      if (wind >= 15 || wave >= 1.2) {
-        return { level: "warning", label: "Mare moderato", badge: "attenzione" };
-      }
-
-      return { level: "safe", label: "Mare calmo", badge: "regolare" };
-    }
-
-    function updateAlertBanner() {
-      const banner = $("alert-banner");
-      const text = $("alert-text");
-      const stateInfo = weatherSeverity();
-
-      banner.classList.remove("safe", "warning", "danger");
-      banner.classList.add(stateInfo.level);
-
-      text.textContent = stateInfo.label;
-      if (stateInfo.level === "safe") {
-        banner.querySelector("span").textContent = "Condizioni:";
-      } else {
-        banner.querySelector("span").textContent = "Condizioni:";
-      }
+      return (degrees(θ) + 360) % 360;
     }
 
     function updateWaypointData() {
       if (!state.waypoint || state.lat === null || state.lon === null) {
         $("distance").textContent = "--";
         $("bearing").textContent = "--";
-        $("route-state").textContent = "--";
-        updateCompass(0);
+        $("ete").textContent = "--";
+        $("eta").textContent = "--";
         return;
       }
 
       const nm = distanceNM(state.lat, state.lon, state.waypoint.lat, state.waypoint.lon);
       const brg = calculateBearing(state.lat, state.lon, state.waypoint.lat, state.waypoint.lon);
 
-      $("distance").textContent = `${nm.toFixed(2)} NM`;
-      $("bearing").textContent = `${Math.round(brg)}° ${cardinal(brg)}`;
+      $("distance").textContent = nm.toFixed(2) + " NM";
+      $("bearing").textContent = Math.round(brg) + "° " + cardinal(brg);
 
-      let routeLabel = "ROTA";
-      if (nm < 0.5) routeLabel = "ARRIVATO";
-      else if (nm < 5) routeLabel = "AVVICINAMENTO";
-      else if (nm < 20) routeLabel = "BUONA";
-      else routeLabel = "LUNGA";
+      // Calcolo ETE (Estimated Time En Route) e ETA (Estimated Time of Arrival)
+      const speed = parseFloat($("speed-sog").value) || state.speed;
+      
+      if (speed > 0) {
+        const totalHours = nm / speed;
+        const hours = Math.floor(totalHours);
+        const minutes = Math.round((totalHours - hours) * 60);
 
-      $("route-state").textContent = routeLabel;
-      updateCompass(brg);
+        // Formattazione ETE
+        if (hours > 0) {
+          $("ete").textContent = `${hours}h ${minutes}m`;
+        } else {
+          $("ete").textContent = `${minutes}m`;
+        }
+
+        // Calcolo orario stimato di arrivo (ETA)
+        const now = new Date();
+        const etaDate = new Date(now.getTime() + totalHours * 3600 * 1000);
+
+        const hoursFormatted = String(etaDate.getHours()).padStart(2, '0');
+        const minutesFormatted = String(etaDate.getMinutes()).padStart(2, '0');
+
+        // Se l'arrivo è in un giorno diverso, mostra la data breve
+        if (etaDate.getDate() !== now.getDate()) {
+          const day = String(etaDate.getDate()).padStart(2, '0');
+          const month = String(etaDate.getMonth() + 1).padStart(2, '0');
+          $("eta").textContent = `${hoursFormatted}:${minutesFormatted} (${day}/${month})`;
+        } else {
+          $("eta").textContent = `${hoursFormatted}:${minutesFormatted}`;
+        }
+      } else {
+        $("ete").textContent = "--";
+        $("eta").textContent = "--";
+      }
     }
 
-    function updateSummary() {
-      const wind = parseFloat($("wind-speed").textContent) || 0;
-      const wave = parseFloat($("wave-height").textContent) || 0;
-
-      $("wind-summary").textContent = wind ? `${Math.round(wind)} kn` : "--";
-      $("sea-summary").textContent = wave ? `${wave.toFixed(1)} m` : "--";
-    }
-
+    /* ---------------------------------------------------------
+       INTEGRAZIONE METEO (OPEN-METEO API)
+    --------------------------------------------------------- */
     async function loadWeather(lat, lon) {
       try {
-        const weatherUrl =
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn`;
-
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn`;
         const weatherRes = await fetch(weatherUrl);
         const weatherData = await weatherRes.json();
 
         if (weatherData.current) {
-          $("temp").textContent = `${weatherData.current.temperature_2m} °C`;
-          $("pressure").textContent = `${Math.round(weatherData.current.surface_pressure)} hPa`;
-          $("wind-speed").textContent = `${Math.round(weatherData.current.wind_speed_10m)} kn`;
-          $("wind-dir").textContent = `${weatherData.current.wind_direction_10m}° ${cardinal(weatherData.current.wind_direction_10m)}`;
+          $("temp").textContent = weatherData.current.temperature_2m + " °C";
+          $("pressure").textContent = Math.round(weatherData.current.surface_pressure) + " hPa";
+          $("wind-speed").textContent = Math.round(weatherData.current.wind_speed_10m) + " kn";
+          $("wind-dir").textContent = weatherData.current.wind_direction_10m + "° " + cardinal(weatherData.current.wind_direction_10m);
         }
 
-        const marineUrl =
-          `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=wave_height,wave_period`;
-
+        const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=wave_height,wave_period`;
         const marineRes = await fetch(marineUrl);
         const marineData = await marineRes.json();
 
         if (marineData.current) {
-          $("wave-height").textContent =
-            marineData.current.wave_height !== null ? `${marineData.current.wave_height} m` : "N/D";
-          $("wave-period").textContent =
-            marineData.current.wave_period !== null ? `${marineData.current.wave_period} s` : "N/D";
+          $("wave-height").textContent = marineData.current.wave_height !== null ? marineData.current.wave_height + " m" : "N/D";
+          $("wave-period").textContent = marineData.current.wave_period !== null ? marineData.current.wave_period + " s" : "N/D";
         }
-
-        updateSummary();
-        updateAlertBanner();
       } catch (err) {
-        console.error("Errore meteo:", err);
+        console.error("Errore nel recupero dati meteo:", err);
       }
     }
 
+    /* ---------------------------------------------------------
+       GEOLOCALIZZAZIONE & EVENTI
+    --------------------------------------------------------- */
     function setPosition(lat, lon) {
       state.lat = lat;
       state.lon = lon;
 
-      $("lat").textContent = `${lat.toFixed(4)}°`;
-      $("lon").textContent = `${lon.toFixed(4)}°`;
+      $("lat").textContent = toDMS(lat, 'lat');
+      $("lon").textContent = toDMS(lon, 'lon');
 
       updateWaypointData();
-      updateMapLinks();
       loadWeather(lat, lon);
     }
 
     $("locate").addEventListener("click", () => {
       if (!navigator.geolocation) {
-        alert("Geolocalizzazione non supportata.");
+        alert("Geolocalizzazione non supportata dal tuo browser.");
         return;
       }
 
       navigator.geolocation.getCurrentPosition(
-        (pos) => setPosition(pos.coords.latitude, pos.coords.longitude),
-        (err) => alert("Impossibile recuperare la posizione: " + err.message),
+        (pos) => {
+          setPosition(pos.coords.latitude, pos.coords.longitude);
+        },
+        (err) => {
+          alert("Impossibile recuperare la posizione GPS: " + err.message);
+        },
         { enableHighAccuracy: true }
       );
     });
@@ -709,47 +437,46 @@
     $("set-wp").addEventListener("click", () => {
       const latVal = parseFloat($("wp-lat").value);
       const lonVal = parseFloat($("wp-lon").value);
+      const speedVal = parseFloat($("speed-sog").value);
 
       if (isNaN(latVal) || isNaN(lonVal)) {
-        alert("Inserisci coordinate valide.");
+        alert("Inserisci coordinate latitudine e longitudine valide.");
         return;
       }
 
       state.waypoint = { lat: latVal, lon: lonVal };
       localStorage.setItem("nav_waypoint", JSON.stringify(state.waypoint));
+
+      if (!isNaN(speedVal) && speedVal > 0) {
+        state.speed = speedVal;
+        localStorage.setItem("nav_speed", speedVal);
+      }
+
       updateWaypointData();
-      updateMapLinks();
     });
 
+    // Ricalcola ETE/ETA automaticamente mentre l'utente digita la velocità
+    $("speed-sog").addEventListener("input", () => {
+      updateWaypointData();
+    });
+
+    /* ---------------------------------------------------------
+       AGGIORNAMENTO MANUALE
+    --------------------------------------------------------- */
     $("refresh").addEventListener("click", () => {
       if (state.lat === null || state.lon === null) {
-        alert("Nessuna posizione GPS disponibile.");
+        alert("Nessuna posizione impostata per aggiornare il meteo.");
         return;
       }
       loadWeather(state.lat, state.lon);
     });
 
-    $("copy-coords").addEventListener("click", () => {
-      if (state.lat === null || state.lon === null) {
-        alert("Nessuna posizione da copiare.");
-        return;
-      }
-
-      const text = `${state.lat.toFixed(5)}, ${state.lon.toFixed(5)}`;
-      navigator.clipboard.writeText(text)
-        .then(() => alert("Coordinate copiate: " + text))
-        .catch(() => alert("Copia non disponibile. Coordinate: " + text));
-    });
-
+    // Inizializzazione dati memorizzati
     if (state.waypoint) {
       $("wp-lat").value = state.waypoint.lat;
       $("wp-lon").value = state.waypoint.lon;
     }
-
-    updateAlertBanner();
-    updateMapLinks();
-    updateWaypointData();
-    updateSummary();
+    $("speed-sog").value = state.speed;
   </script>
 </body>
 </html>
