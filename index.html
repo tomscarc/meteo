@@ -55,7 +55,7 @@
         /* Mappa Leaflet */
         #map {
             width: 100%;
-            height: 55vh;
+            height: 50vh;
             z-index: 1;
         }
 
@@ -65,7 +65,7 @@
             background-color: var(--card-bg);
             padding: 15px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 12px;
             overflow-y: auto;
             border-top: 2px solid var(--accent-orange);
@@ -87,7 +87,7 @@
         }
 
         .telemetry-value {
-            font-size: 1.4rem;
+            font-size: 1.1rem;
             font-weight: bold;
             color: #fff;
         }
@@ -97,39 +97,63 @@
             color: var(--text-muted);
         }
 
-        /* Modale / Input Waypoint */
+        /* Modale / Input Waypoint DMS */
         #waypoint-controls {
             position: absolute;
             top: 10px;
             right: 10px;
             z-index: 1000;
-            background: rgba(11, 19, 31, 0.9);
-            padding: 10px;
+            background: rgba(11, 19, 31, 0.95);
+            padding: 12px;
             border-radius: 8px;
             border: 1px solid var(--accent-orange);
             display: flex;
+            flex-direction: column;
             gap: 8px;
-            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
-        input {
+        .dms-row {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .dms-row label {
+            width: 30px;
+            font-weight: bold;
+            color: var(--accent-orange);
+        }
+
+        input, select {
             background: #162235;
             border: 1px solid #23354d;
             color: #fff;
-            padding: 6px;
+            padding: 5px;
             border-radius: 4px;
-            width: 90px;
             font-size: 0.85rem;
+            text-align: center;
+        }
+
+        input[type="number"] {
+            width: 45px;
+        }
+
+        input.sec-input {
+            width: 55px;
         }
 
         button {
             background: var(--accent-orange);
             color: #fff;
             border: none;
-            padding: 6px 12px;
+            padding: 8px 12px;
             border-radius: 4px;
             font-weight: bold;
             cursor: pointer;
+            margin-top: 4px;
         }
 
         button:hover {
@@ -145,24 +169,48 @@
     </div>
 
     <div id="main-container">
-        <!-- Controllo inserimento Waypoint rapido -->
+        <!-- Controllo Inserimento Waypoint in GG MM SS -->
         <div id="waypoint-controls">
-            <input type="number" id="wp-lat" step="any" placeholder="Lat (N)">
-            <input type="number" id="wp-lon" step="any" placeholder="Lon (E)">
-            <button onclick="setWaypointFromInput()">Imposta WP</button>
+            <div style="font-size:0.8rem; font-weight:bold; color:#fff; margin-bottom:2px;">Imposta Waypoint (DMS)</div>
+            
+            <!-- Latitudine -->
+            <div class="dms-row">
+                <label>LAT</label>
+                <input type="number" id="wp-lat-deg" placeholder="GG" min="0" max="90">°
+                <input type="number" id="wp-lat-min" placeholder="MM" min="0" max="59">'
+                <input type="number" id="wp-lat-sec" class="sec-input" placeholder="SS" min="0" max="59.99" step="any">"
+                <select id="wp-lat-dir">
+                    <option value="N">N</option>
+                    <option value="S">S</option>
+                </select>
+            </div>
+
+            <!-- Longitudine -->
+            <div class="dms-row">
+                <label>LON</label>
+                <input type="number" id="wp-lon-deg" placeholder="GG" min="0" max="180">°
+                <input type="number" id="wp-lon-min" placeholder="MM" min="0" max="59">'
+                <input type="number" id="wp-lon-sec" class="sec-input" placeholder="SS" min="0" max="59.99" step="any">"
+                <select id="wp-lon-dir">
+                    <option value="E">E</option>
+                    <option value="W">W</option>
+                </select>
+            </div>
+
+            <button onclick="setWaypointFromInput()">Imposta Waypoint</button>
         </div>
 
-        <!-- Elemento Mappa Leaflet -->
+        <!-- Mappa Leaflet -->
         <div id="map"></div>
 
         <!-- Telemetria Navigazione -->
         <div id="dashboard">
             <div class="telemetry-card">
-                <div class="telemetry-label">Posizione GPS</div>
-                <div class="telemetry-value" id="val-pos">--° --.--'</div>
+                <div class="telemetry-label">Posizione GPS (DMS)</div>
+                <div class="telemetry-value" id="val-pos">--° --' --"</div>
             </div>
             <div class="telemetry-card">
-                <div class="telemetry-label">Waypoint</div>
+                <div class="telemetry-label">Waypoint (DMS)</div>
                 <div class="telemetry-value" id="val-wp">Non Impostato</div>
             </div>
             <div class="telemetry-card">
@@ -180,91 +228,129 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // Inizializzazione Coordinate di Default (Bari - Mare Adriatico)
         let currentPos = [41.1259, 16.8721]; 
         let waypointPos = null;
 
-        // Inizializzazione Mappa Leaflet
         const map = L.map('map').setView(currentPos, 11);
 
-        // Layer Cartografico OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // Icona Imbarcazione / Posizione Corrente
         const posMarker = L.marker(currentPos).addTo(map)
             .bindPopup("Posizione Corrente")
             .openPopup();
 
         let wpMarker = null;
-        let rhumbLine = null; // Linea Lossodromica
+        let rhumbLine = null;
 
-        // Pulsante sulla mappa per aggiungere Waypoint al click
+        // Imposta Waypoint via Click sulla Mappa
         map.on('click', function(e) {
             setWaypoint(e.latlng.lat, e.latlng.lng);
         });
 
-        // Imposta o aggiorna il Waypoint
         function setWaypoint(lat, lng) {
             waypointPos = [lat, lng];
 
-            // Aggiorna o crea il marker del Waypoint
             if (wpMarker) {
                 wpMarker.setLatLng(waypointPos);
             } else {
-                wpMarker = L.marker(waypointPos, { opacity: 0.9 }).addTo(map)
+                wpMarker = L.marker(waypointPos).addTo(map)
                     .bindPopup("Waypoint Destinazione");
             }
 
-            // Popola i campi input
-            document.getElementById('wp-lat').value = lat.toFixed(4);
-            document.getElementById('wp-lon').value = lng.toFixed(4);
+            // Popola i campi input convertendo da Decimale a DMS
+            const latDMS = decimalToDMS(lat, true);
+            const lonDMS = decimalToDMS(lng, false);
+
+            document.getElementById('wp-lat-deg').value = latDMS.deg;
+            document.getElementById('wp-lat-min').value = latDMS.min;
+            document.getElementById('wp-lat-sec').value = latDMS.sec;
+            document.getElementById('wp-lat-dir').value = latDMS.dir;
+
+            document.getElementById('wp-lon-deg').value = lonDMS.deg;
+            document.getElementById('wp-lon-min').value = lonDMS.min;
+            document.getElementById('wp-lon-sec').value = lonDMS.sec;
+            document.getElementById('wp-lon-dir').value = lonDMS.dir;
 
             updateNavigation();
         }
 
+        // Conversione da Input DMS a Decimale al click del pulsante
         function setWaypointFromInput() {
-            const lat = parseFloat(document.getElementById('wp-lat').value);
-            const lng = parseFloat(document.getElementById('wp-lon').value);
-            if (!isNaN(lat) && !isNaN(lng)) {
-                setWaypoint(lat, lng);
-                map.panTo([lat, lng]);
-            }
+            const latDeg = parseFloat(document.getElementById('wp-lat-deg').value) || 0;
+            const latMin = parseFloat(document.getElementById('wp-lat-min').value) || 0;
+            const latSec = parseFloat(document.getElementById('wp-lat-sec').value) || 0;
+            const latDir = document.getElementById('wp-lat-dir').value;
+
+            const lonDeg = parseFloat(document.getElementById('wp-lon-deg').value) || 0;
+            const lonMin = parseFloat(document.getElementById('wp-lon-min').value) || 0;
+            const lonSec = parseFloat(document.getElementById('wp-lon-sec').value) || 0;
+            const lonDir = document.getElementById('wp-lon-dir').value;
+
+            const lat = dmsToDecimal(latDeg, latMin, latSec, latDir);
+            const lon = dmsToDecimal(lonDeg, lonMin, lonSec, lonDir);
+
+            setWaypoint(lat, lon);
+            map.panTo([lat, lon]);
         }
 
-        // Calcolo della Lossodromia (Linea Retta su proiezione Mercatore)
         function updateNavigation() {
             if (!currentPos || !waypointPos) return;
 
-            // 1. Tracciamento / Aggiornamento Linea Lossodromica Fluorescente
+            // Linea Lossodromica
             if (rhumbLine) {
                 rhumbLine.setLatLngs([currentPos, waypointPos]);
             } else {
                 rhumbLine = L.polyline([currentPos, waypointPos], {
                     color: '#FF6B00',
                     weight: 3,
-                    dashArray: '8, 6', // Tratteggiato stile nautico
+                    dashArray: '8, 6',
                     opacity: 0.9
                 }).addTo(map);
             }
 
-            // 2. Calcolo Distanza Lossodromica (Approssimazione in Miglia Nautiche - NM)
+            // Distanza Lossodromica in Miglia Nautiche (NM)
             const distMeters = map.distance(currentPos, waypointPos);
             const distNM = (distMeters / 1852).toFixed(2);
 
-            // 3. Calcolo Rilevamento / Bearing (BRG)
+            // Bearing / Rilevamento (BRG)
             const brg = calculateBearing(currentPos[0], currentPos[1], waypointPos[0], waypointPos[1]);
 
-            // Aggiornamento Interfaccia Telemetria
-            document.getElementById('val-pos').innerText = formatDMM(currentPos[0], currentPos[1]);
-            document.getElementById('val-wp').innerText = formatDMM(waypointPos[0], waypointPos[1]);
+            // Aggiorna Telemetria con formattazione GG MM SS
+            document.getElementById('val-pos').innerText = formatDMSString(currentPos[0], currentPos[1]);
+            document.getElementById('val-wp').innerText = formatDMSString(waypointPos[0], waypointPos[1]);
             document.getElementById('val-dist').innerText = distNM;
             document.getElementById('val-brg').innerText = Math.round(brg);
         }
 
-        // Calcolo del Bearing iniziale (Rilevamento) tra due coordinate
+        // Funzione di conversione da Gradi Decimali a DMS
+        function decimalToDMS(val, isLat) {
+            const dir = isLat ? (val >= 0 ? 'N' : 'S') : (val >= 0 ? 'E' : 'W');
+            const abs = Math.abs(val);
+            const deg = Math.floor(abs);
+            const minFull = (abs - deg) * 60;
+            const min = Math.floor(minFull);
+            const sec = ((minFull - min) * 60).toFixed(1);
+            return { deg, min, sec, dir };
+        }
+
+        // Funzione di conversione da DMS a Gradi Decimali
+        function dmsToDecimal(deg, min, sec, dir) {
+            let dec = deg + (min / 60) + (sec / 3600);
+            if (dir === 'S' || dir === 'W') dec = -dec;
+            return dec;
+        }
+
+        // Formattazione stringa leggibile GG° MM' SS" cardinale
+        function formatDMSString(lat, lon) {
+            const latDMS = decimalToDMS(lat, true);
+            const lonDMS = decimalToDMS(lon, false);
+            return `${latDMS.deg}°${latDMS.min}'${latDMS.sec}"${latDMS.dir} ${lonDMS.deg}°${lonDMS.min}'${lonDMS.sec}"${lonDMS.dir}`;
+        }
+
+        // Calcolo Rilevamento (BRG)
         function calculateBearing(lat1, lon1, lat2, lon2) {
             const φ1 = lat1 * Math.PI / 180;
             const φ2 = lat2 * Math.PI / 180;
@@ -274,30 +360,10 @@
             const x = Math.cos(φ1) * Math.sin(φ2) -
                       Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
             
-            const θ = Math.atan2(y, x);
-            return (θ * 180 / Math.PI + 360) % 360;
+            return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
         }
 
-        // Formattazione Coordinate in Gradi e Minuti Decimali (DMM)
-        function formatDMM(lat, lon) {
-            const formatLat = (val) => {
-                const ns = val >= 0 ? 'N' : 'S';
-                const abs = Math.abs(val);
-                const deg = Math.floor(abs);
-                const min = ((abs - deg) * 60).toFixed(2);
-                return `${deg}°${min}'${ns}`;
-            };
-            const formatLon = (val) => {
-                const ew = val >= 0 ? 'E' : 'W';
-                const abs = Math.abs(val);
-                const deg = Math.floor(abs);
-                const min = ((abs - deg) * 60).toFixed(2);
-                return `${deg}°${min}'${ew}`;
-            };
-            return `${formatLat(lat)} ${formatLon(lon)}`;
-        }
-
-        // Geolocalizzazione GPS in tempo reale
+        // GPS Tracking
         if ("geolocation" in navigator) {
             navigator.geolocation.watchPosition(
                 (position) => {
@@ -305,7 +371,7 @@
                     posMarker.setLatLng(currentPos);
                     updateNavigation();
                 },
-                (error) => console.warn("GPS non disponibile o permesso negato:", error),
+                (error) => console.warn("GPS non disponibile:", error),
                 { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
             );
         }
